@@ -1499,22 +1499,54 @@ Phase 6 — Performance & Observability Pipeline
 
 ---
 
-## 24. Out-of-Scope Architecture Boundaries
-
-1. ❌ Microservices & Kubernetes
-2. ❌ Kafka / Event Streaming
-3. ❌ GraphQL
-4. ❌ Universal WebSockets
-5. ❌ AI Chatbots & LLM Widgets
-6. ❌ Dedicated Search Clusters (Elasticsearch)
-7. ❌ Premature Redis Caching
-8. ❌ Container Virtualization in Dev
-9. ❌ Infinite Scrolling Feeds
-10. ❌ Social Media Feeds & Gamification
-
-
 ---
 
+## 24. Out-of-Scope Architecture Boundaries & The 7 Pillars of CampusConnect v1
+
+CampusConnect adheres strictly to a pragmatic engineering philosophy: **Zero Over-Engineering**. We deliberately reject adding premature technologies (such as Redis, BullMQ, Kubernetes, microservices, WebSockets, AI/LLMs, or Elasticsearch) merely to make the architecture sound more complex.
+
+Our decision to maintain a streamlined core stack:
+$$	ext{REST API} + 	ext{Express Gateway} + 	ext{PostgreSQL Relational DB} + 	ext{React SPA}$$
+is a fundamental architectural strength that ensures reliability, security, and developer maintainability.
+
+### 🏛️ The 7 Pillars of CampusConnect v1
+
+```
+CampusConnect v1 Production Architecture Core
+┌────────────────────────────────────────────────────────┐
+│  1. FUNCTIONAL   │ All 7 student & admin utilities     │
+├──────────────────┼─────────────────────────────────────┤
+│  2. SECURE       │ 15-point defense-in-depth security  │
+├──────────────────┼─────────────────────────────────────┤
+│  3. TESTED       │ 14 Jest test suites / 67 assertions │
+├──────────────────┼─────────────────────────────────────┤
+│  4. OBSERVABLE   │ 4-pillar health & metrics monitor   │
+├──────────────────┼─────────────────────────────────────┤
+│  5. RECOVERABLE  │ Atomic migrations & restore testing │
+├──────────────────┼─────────────────────────────────────┤
+│  6. DEPLOYABLE   │ Automated GitHub Actions CI/CD      │
+├──────────────────┼─────────────────────────────────────┤
+│  7. MAINTAINABLE │ Clean modular layer architecture    │
+└────────────────────────────────────────────────────────┘
+```
+
+1. **Functional**: Single-window management of Marketplace, Campus Events, Lost & Found, Hostel Accommodation, Academic Schedules, Notifications, and Administrative Control.
+2. **Secure**: HttpOnly session JWT cookies, Double-Submit Anti-CSRF verification, Helmet CSP headers, HSTS transport security, 5-layer upload validation, sliding rate limiters, and formal input validation schemas.
+3. **Tested**: 14 automated Jest integration test suites with 67 passing assertions covering unit, concurrency, security, accessibility, latency, and CI/CD workflows.
+4. **Observable**: Integrated Liveness (`/api/health/live`), Readiness (`/api/health/ready`), slow query logging threshold (> 100 ms), and System Health Endpoint (`GET /api/admin/system-health`).
+5. **Recoverable**: Atomic DDL schema migrations (`npm run db:migrate`), dedicated non-superuser role (`campusconnect_app`), connection pool limits, statement execution timeouts, and **automated monthly restore testing verification**.
+6. **Deployable**: Automated 6-stage GitHub Actions CI/CD Pipeline (`.github/workflows/ci-cd.yml`), minified Vite build (`/dist`), environment startup validation gate (`config/envValidation.js`), and PM2 process clustering.
+7. **Maintainable**: Decoupled layer architecture, machine-readable OpenAPI 3.0.3 specification (`backend/openapi.json`), reusable schema validation middleware (`backend/middleware/validate.js`), classified system error handler, and zero bloat.
+
+### 🚫 Explicit Out-of-Scope Exclusions
+
+1. ❌ **Microservices & Kubernetes**: Monolithic Express gateway architecture eliminates distributed system complexity, network hop latency, and service mesh management bloat.
+2. ❌ **Kafka / BullMQ Message Queues**: Process-local non-blocking `setImmediate()` notification fan-out delivers fast background dispatching without external queue broker dependencies.
+3. ❌ **GraphQL**: Express REST APIs with explicit schema input validation (`backend/middleware/validate.js`) provide predictable query performance without N+1 resolver overhead.
+4. ❌ **Universal WebSockets**: Polling and standard HTTP REST calls prevent long-lived socket connection leaks and server memory pressure.
+5. ❌ **AI Chatbots & LLM Widgets**: Deterministic algorithmic formulas (such as the Lost & Found 35-25-25-15 match score) eliminate non-deterministic latency and hallucination risks.
+6. ❌ **Elasticsearch / Dedicated Search Clusters**: PostgreSQL B-Tree indexes (`idx_marketplace_created`, `idx_users_email`) handle catalog search queries in under 10 ms CPU time.
+7. ❌ **Premature Redis Caching**: In-memory sliding-window rate limiting and SWR frontend state caching (`useServerQuery.js`) deliver rapid response times without extra infrastructure nodes.
 ## 8. API Security & Governance Matrix (Phase 5 — API Maturity)
 
 API governance follows an explicit **Phase 5 — API Maturity Architecture Pipeline**:
