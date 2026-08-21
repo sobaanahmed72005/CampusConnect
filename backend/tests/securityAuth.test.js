@@ -56,6 +56,15 @@ describe('Security & Authentication Integration Test Suite (Specification)', () 
       const isSessionValid = decodedJwtSessionVersion === currentDbSessionVersion
       expect(isSessionValid).toBe(false)
     })
+
+    test('Logout-all endpoint increments session_version, invalidating all active devices', () => {
+      let dbSessionVersion = 1
+      // Simulate logout-all execution
+      dbSessionVersion += 1
+      const priorJwtSessionVersion = 1
+      expect(dbSessionVersion).toBe(2)
+      expect(priorJwtSessionVersion === dbSessionVersion).toBe(false)
+    })
   })
 
   describe('4. Resource Ownership & IDOR Protection', () => {

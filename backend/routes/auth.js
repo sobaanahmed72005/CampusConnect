@@ -130,6 +130,31 @@ router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' })
 })
 
+// POST /api/auth/logout-all (Revokes session_version across all active devices)
+router.post('/logout-all', authenticate, async (req, res) => {
+  try {
+    await db.query(
+      'UPDATE users SET session_version = session_version + 1 WHERE id = $1',
+      [req.user.id]
+    )
+
+    res.clearCookie('token', COOKIE_OPTIONS)
+    res.clearCookie('XSRF-TOKEN', {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    })
+
+    res.json({
+      success: true,
+      message: 'Logged out from all active sessions and devices.'
+    })
+  } catch (err) {
+    console.error('Logout-all error:', err)
+    res.status(500).json({ message: 'Failed to revoke active sessions' })
+  }
+})
+
 // GET /api/auth/me
 router.get('/me', authenticate, async (req, res) => {
   res.json({ user: req.user })
