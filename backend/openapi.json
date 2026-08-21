@@ -199,6 +199,35 @@
         "summary": "Fetch Security Audit Logs",
         "responses": { "200": { "description": "Security audit trail" } }
       }
+    },
+    "/messages/conversations": {
+      "post": {
+        "summary": "Initiate Marketplace Listing Conversation",
+        "responses": {
+          "201": { "description": "Conversation created or retrieved" },
+          "400": { "description": "Cannot message own listing or invalid payload" }
+        }
+      },
+      "get": {
+        "summary": "List Student Marketplace Conversations",
+        "responses": { "200": { "description": "Active student conversations list" } }
+      }
+    },
+    "/messages/conversations/{id}/messages": {
+      "get": {
+        "summary": "Fetch Conversation Message History",
+        "responses": {
+          "200": { "description": "Paginated conversation messages" },
+          "403": { "description": "Forbidden - Non-participant request rejected" }
+        }
+      },
+      "post": {
+        "summary": "Send Message via REST Fallback",
+        "responses": {
+          "201": { "description": "Message persisted and dispatched" },
+          "403": { "description": "Forbidden - Non-participant request rejected" }
+        }
+      }
     }
   }
 }

@@ -25,6 +25,7 @@ function createTestServer() {
   app.use('/api/profile', require('../../routes/profile'))
   app.use('/api/notifications', require('../../routes/notifications'))
   app.use('/api/admin', require('../../routes/admin'))
+  app.use('/api/messages', require('../../routes/messages'))
 
   return {
     app,

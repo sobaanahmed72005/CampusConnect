@@ -53,7 +53,35 @@ async function applyDatabaseInvariants() {
       END $$;
     `).catch(() => {})
 
-    // 6. High-Performance Database Query Indexes
+    // 6. Marketplace Conversations & Messaging Tables
+    await query(`
+      CREATE TABLE IF NOT EXISTS marketplace_conversations (
+        id UUID PRIMARY KEY,
+        listing_id UUID REFERENCES marketplace_listings(id) ON DELETE CASCADE,
+        buyer_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        seller_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_conversation_listing_buyer') THEN
+          ALTER TABLE marketplace_conversations ADD CONSTRAINT uq_conversation_listing_buyer UNIQUE (listing_id, buyer_id);
+        END IF;
+      END $$;
+
+      CREATE TABLE IF NOT EXISTS marketplace_messages (
+        id UUID PRIMARY KEY,
+        conversation_id UUID REFERENCES marketplace_conversations(id) ON DELETE CASCADE,
+        sender_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `).catch(() => {})
+
+    // 7. High-Performance Database Query Indexes
     await query(`
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
       CREATE INDEX IF NOT EXISTS idx_marketplace_created ON marketplace_listings(created_at DESC);
@@ -64,6 +92,9 @@ async function applyDatabaseInvariants() {
       CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read);
       CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
+      CREATE INDEX IF NOT EXISTS idx_conversations_buyer ON marketplace_conversations(buyer_id);
+      CREATE INDEX IF NOT EXISTS idx_conversations_seller ON marketplace_conversations(seller_id);
+      CREATE INDEX IF NOT EXISTS idx_messages_conversation ON marketplace_messages(conversation_id, created_at ASC);
     `).catch(() => {})
 
     console.log('🔒 PostgreSQL Database Schema Invariants, Constraints & Query Indexes Active')

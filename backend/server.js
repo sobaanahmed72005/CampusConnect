@@ -87,6 +87,7 @@ app.use('/api/notifications', require('./routes/notifications'))
 app.use('/api/announcements', require('./routes/announcements'))
 app.use('/api/admin', require('./routes/admin'))
 app.use('/api/search', require('./routes/search'))
+app.use('/api/messages', require('./routes/messages'))
 
 // Health & Readiness Probes for Observability and Container Orchestration
 const { query: dbQuery } = require('./config/database')
@@ -191,12 +192,16 @@ app.use((err, req, res, next) => {
 const { applyDatabaseInvariants } = require('./config/schemaInvariants')
 const db = require('./config/database')
 
+const { initSocket } = require('./config/socket')
+
 const PORT = process.env.PORT || 5000
 const server = app.listen(PORT, () => {
   console.log(`🚀 CampusConnect Backend running on http://localhost:${PORT}`)
   console.log(`📦 Environment: ${process.env.NODE_ENV}`)
   applyDatabaseInvariants()
 })
+
+const io = initSocket(server)
 
 process.on('SIGTERM', () => {
   console.log('🛑 Received SIGTERM. Closing server gracefully...')
