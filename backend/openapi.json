@@ -1,0 +1,194 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CampusConnect REST API Specification",
+    "description": "Comprehensive OpenAPI 3.0.3 contract for National University of Computer & Emerging Sciences (FAST / NUCES) Campus Management System.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api",
+      "description": "Local Development Express API Server"
+    },
+    {
+      "url": "https://api.campusconnect.nu.edu.pk/api",
+      "description": "Production API Server"
+    }
+  ],
+  "paths": {
+    "/health/live": {
+      "get": {
+        "summary": "Liveness Probe Check",
+        "description": "Returns process uptime and server timestamp.",
+        "responses": {
+          "200": { "description": "Process is alive and healthy" }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Readiness Probe Check",
+        "description": "Executes live PostgreSQL database ping query.",
+        "responses": {
+          "200": { "description": "API Gateway and PostgreSQL Database are ready" },
+          "503": { "description": "Database connection disconnected" }
+        }
+      }
+    },
+    "/auth/csrf-token": {
+      "get": {
+        "summary": "Retrieve Double-Submit Anti-CSRF Token",
+        "responses": {
+          "200": { "description": "CSRF cookie issued successfully" }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Register Student Account",
+        "description": "Enforces @nu.edu.pk institutional domain validation.",
+        "responses": {
+          "201": { "description": "Student account created successfully" },
+          "400": { "description": "Invalid payload or non-FAST email domain" },
+          "409": { "description": "Email address already registered" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Authenticate User Session",
+        "description": "Issues HttpOnly JWT cookie on successful credential verification.",
+        "responses": {
+          "200": { "description": "User authenticated successfully" },
+          "401": { "description": "Invalid credentials or account deactivated" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Terminate User Session",
+        "responses": {
+          "200": { "description": "Session cookies cleared" }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Get Authenticated User Profile",
+        "responses": {
+          "200": { "description": "Authenticated user object" },
+          "401": { "description": "Unauthenticated or session revoked" }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "summary": "List Campus Events",
+        "responses": { "200": { "description": "Array of campus events" } }
+      },
+      "post": {
+        "summary": "Create Campus Event (Admin)",
+        "responses": { "201": { "description": "Event created" } }
+      }
+    },
+    "/events/{id}/register": {
+      "post": {
+        "summary": "Register for Campus Event",
+        "description": "ACID transaction with SELECT FOR UPDATE row locking preventing overbooking.",
+        "responses": {
+          "200": { "description": "Registered successfully" },
+          "400": { "description": "Event capacity reached" },
+          "409": { "description": "Duplicate registration" }
+        }
+      }
+    },
+    "/marketplace": {
+      "get": {
+        "summary": "Search & Paginate Marketplace Listings",
+        "responses": { "200": { "description": "Paginated product listings" } }
+      },
+      "post": {
+        "summary": "Create Marketplace Listing",
+        "responses": { "201": { "description": "Product listing created" } }
+      }
+    },
+    "/marketplace/{id}/sold": {
+      "patch": {
+        "summary": "Mark Product as Sold",
+        "description": "Idempotent listing status toggle. Enforces owner IDOR protection.",
+        "responses": {
+          "200": { "description": "Listing status updated to sold" },
+          "403": { "description": "Forbidden - Not listing owner" }
+        }
+      }
+    },
+    "/lost-found": {
+      "get": {
+        "summary": "List Lost & Found Reports",
+        "responses": { "200": { "description": "Array of lost/found item reports" } }
+      },
+      "post": {
+        "summary": "Report Lost or Found Item",
+        "responses": { "201": { "description": "Report submitted" } }
+      }
+    },
+    "/lost-found/{id}/matches": {
+      "get": {
+        "summary": "Calculate Lost & Found Matches",
+        "description": "Executes 35-25-25-15 weighted match scoring algorithm.",
+        "responses": { "200": { "description": "Candidate matches with confidence breakdown" } }
+      }
+    },
+    "/accommodation": {
+      "get": {
+        "summary": "Search Hostel Accommodation",
+        "responses": { "200": { "description": "Hostel listings with distance metrics" } }
+      }
+    },
+    "/announcements": {
+      "get": {
+        "summary": "List Campus Announcements",
+        "responses": { "200": { "description": "Announcements feed" } }
+      },
+      "post": {
+        "summary": "Broadcast Announcement (Admin)",
+        "description": "Atomic DB commit followed by non-blocking setImmediate() notification batch fan-out.",
+        "responses": { "201": { "description": "Announcement broadcasted" } }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "summary": "Get Student Notifications",
+        "responses": { "200": { "description": "Notifications feed" } }
+      }
+    },
+    "/notifications/read-all": {
+      "patch": {
+        "summary": "Mark All Notifications as Read",
+        "responses": { "200": { "description": "All notifications marked read" } }
+      }
+    },
+    "/admin/stats": {
+      "get": {
+        "summary": "Get Administrative Subsystem Metrics",
+        "responses": {
+          "200": { "description": "5-subsystem administrative metrics" },
+          "403": { "description": "Forbidden - Require Admin role" }
+        }
+      }
+    },
+    "/admin/users/{id}/status": {
+      "patch": {
+        "summary": "Toggle Student Account Status (Suspend / Activate)",
+        "description": "Toggles is_active boolean. Inactive users are immediately revoked on next request.",
+        "responses": { "200": { "description": "User status updated & audit log generated" } }
+      }
+    },
+    "/admin/audit-logs": {
+      "get": {
+        "summary": "Fetch Security Audit Logs",
+        "responses": { "200": { "description": "Security audit trail" } }
+      }
+    }
+  }
+}
