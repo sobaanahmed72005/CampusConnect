@@ -825,3 +825,11 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 .no-select { user-select: none; }
 
+/* =================== ACCESSIBILITY PREFERS-REDUCED-MOTION =================== */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
