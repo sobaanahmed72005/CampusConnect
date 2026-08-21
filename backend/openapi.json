@@ -72,6 +72,16 @@
         }
       }
     },
+    "/auth/logout-all": {
+      "post": {
+        "summary": "Revoke All Multi-Device User Sessions",
+        "description": "Increments session_version in PostgreSQL, invalidating active JWTs across all devices.",
+        "responses": {
+          "200": { "description": "All active multi-device sessions revoked" },
+          "401": { "description": "Unauthenticated or session revoked" }
+        }
+      }
+    },
     "/auth/me": {
       "get": {
         "summary": "Get Authenticated User Profile",

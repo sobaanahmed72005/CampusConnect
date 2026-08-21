@@ -1477,3 +1477,68 @@ Integrated 4-pillar observability architecture (**Logs + Metrics + Health Probes
 8. ❌ Container Virtualization in Dev
 9. ❌ Infinite Scrolling Feeds
 10. ❌ Social Media Feeds & Gamification
+
+
+---
+
+## 8. API Security & Governance Matrix (Phase 5 — API Maturity)
+
+API governance follows an explicit **Phase 5 — API Maturity Architecture Pipeline**:
+
+```
+Phase 5 — API Maturity Pipeline
+┌────────────────────────────────────────────────────────┐
+1. Complete 27-Endpoint API Governance Matrix            │
+   (Explicit Auth, CSRF, Rate Limit & RBAC rules)        │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+2. OpenAPI 3.0.3 Machine-Readable Specification          │
+   (Machine-readable API contract in backend/openapi.json)│
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+3. Automated API Contract Validation Test Suite          │
+   (openapiContract.test.js prevents documentation drift)│
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+4. Classified Error Codes & DB Error Sanitization        │
+   (VALIDATION_ERROR, CSRF_FAILURE, DATABASE_ERROR, etc.)│
+└────────────────────────────────────────────────────────┘
+```
+
+### 8.1 Complete 27-Endpoint Security & Governance Matrix
+
+| Method | API Endpoint Route | Auth Required | CSRF Guard | Rate Limit Category | Access Level / Permission Check |
+|---|---|---|---|---|---|
+| `POST` | `/api/auth/register` | ❌ Public | ✅ Enforced | `registerLimiter` | Student (`@nu.edu.pk` domain enforced) |
+| `POST` | `/api/auth/login` | ❌ Public | ✅ Enforced | `loginLimiter` | Authenticated Credentials |
+| `POST` | `/api/auth/logout` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Authenticated User Session |
+| `POST` | `/api/auth/logout-all` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Authenticated User Session (`session_version++`) |
+| `GET` | `/api/auth/me` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Authenticated User Session |
+| `POST` | `/api/auth/forgot-password`| ❌ Public | ✅ Enforced | `resetLimiter` | Generic Enumeration Protection |
+| `POST` | `/api/auth/reset-password` | ❌ Public | ✅ Enforced | `resetLimiter` | Valid 256-bit Reset Token |
+| `GET` | `/api/csrf-token` | ❌ Public | ❌ Issue CSRF | `apiLimiter` | Public CSRF Token Generation |
+| `GET` | `/api/announcements` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Authenticated User Session |
+| `POST` | `/api/announcements` | ✅ Cookie JWT | ✅ Enforced | `adminLimiter` | Admin (`role === 'admin'`) |
+| `GET` | `/api/marketplace` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Filter & Pagination Parameters |
+| `POST` | `/api/marketplace` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Authenticated Student Seller |
+| `GET` | `/api/marketplace/:id` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Authenticated User Session |
+| `PUT` | `/api/marketplace/:id/sold` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Resource Owner (`seller_id === req.user.id`) |
+| `DELETE`| `/api/marketplace/:id` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Resource Owner or Admin |
+| `GET` | `/api/events` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Authenticated User Session |
+| `POST` | `/api/events` | ✅ Cookie JWT | ✅ Enforced | `adminLimiter` | Admin (`role === 'admin'`) |
+| `POST` | `/api/events/:id/register` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | `SELECT FOR UPDATE` ACID Transaction |
+| `GET` | `/api/lost-found` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Match Confidence Calculation |
+| `POST` | `/api/lost-found` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Authenticated Reporter |
+| `GET` | `/api/accommodation` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Campus Distance & Rent Filters |
+| `POST` | `/api/accommodation` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Authenticated Listing Owner |
+| `GET` | `/api/profile` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Authenticated User Session |
+| `PUT` | `/api/profile` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Authenticated User Session |
+| `GET` | `/api/notifications` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Authenticated User Session |
+| `GET` | `/api/admin/users` | ✅ Cookie JWT | ❌ Read Only | `adminLimiter` | Admin (`role === 'admin'`) |
+| `GET` | `/api/admin/system-health` | ✅ Cookie JWT | ❌ Read Only | `adminLimiter` | Admin System Metrics Monitor |
