@@ -5,8 +5,12 @@ const helmet = require('helmet')
 const morgan = require('morgan')
 const cookieParser = require('cookie-parser')
 const path = require('path')
-
 const crypto = require('crypto')
+
+const { validateEnvironment } = require('./config/envValidation')
+
+// Enforce Phase 3 Environment Validation Gate
+validateEnvironment()
 
 const app = express()
 

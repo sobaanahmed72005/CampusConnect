@@ -1102,7 +1102,49 @@ The application exposes an explicit multi-device session revocation endpoint (`P
 
 ---
 
-## 15. Production Deployment Architecture
+## 15. Production Deployment Architecture (Phase 3 — Production Readiness)
+
+Production deployment follows an explicit **Phase 3 — Production Readiness Roadmap Pipeline**:
+
+```
+Phase 3 — Production Readiness Pipeline
+┌────────────────────────────────────────────────────────┐
+1. Liveness & Readiness Health Probes                    │
+   (GET /api/health/live & GET /api/health/ready)        │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+2. Environment Configuration Startup Validation Gate     │
+   (validateEnvironment() checks mandatory env vars)     │
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+3. Reproducible Database Migration Execution             │
+   (npm run db:migrate executes DDL in atomic SQL tx)    │
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+4. Hardened Production Configuration Gateway             │
+   (NODE_ENV=production, HSTS, Helmet CSP, PM2 cluster)  │
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+5. Automated Daily Database Logical & WAL Backups        │
+   (Daily pg_dump logical dumps + WAL archive logs)      │
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+6. Automated Monthly Backup Restore Verification         │
+   (Automated pg_restore pipeline into staging containers)│
+└────────────────────────────────────────────────────────┘
+```
+
+### 15.1 High-Availability Production Architecture Diagram
 
 ```
                                       INTERNET
@@ -1117,21 +1159,40 @@ The application exposes an explicit multi-device session revocation endpoint (`P
     (Vite Static Assets: HTML/CSS/JS)               (Node.js Runtime / PM2 / Docker)
                                                                 │
                                                                 ▼
-                                                    Managed PostgreSQL Database
-                                                  (VPC Private Subnet / TLS Tunnel)
+                                                    Readiness Probe Validation
+                                                    (GET /api/health/ready)
+                                                                │
+                                         ┌──────────────────────┴──────────────────────┐
+                                         ▼                                             ▼
+                             Managed PostgreSQL Database               Local / Cloud Storage Tier
+                           (VPC Private Subnet / TLS Tunnel)           (5-Layer Validated Files)
+                                         │
+                                         ▼
+                            Automated Backups & WAL PITR
+                                         │
+                                         ▼
+                           Automated Restore Verification
 ```
 
-1. **Production Frontend**: Vite minified build (`npm run build`), served via CDN with long-lived asset caching headers (`max-age=31536000`).
-2. **Production Backend**: Express gateway running on Node.js (`NODE_ENV=production`) behind Nginx/Cloudflare reverse proxies with PM2 process clustering (`pm2 start server.js -i max`).
+### 15.2 Production Frontend Architecture
+- **Vite Production Compilation (`npm run build`)**: Compiles React SPA into minified, hash-versioned static HTML/CSS/JS bundles (`/dist`).
+- **CDN Global Distribution**: Served via Edge Content Delivery Networks (Cloudflare / AWS CloudFront) with immutable caching headers (`max-age=31536000`).
+
+### 15.3 Production Backend Gateway Architecture
+- **Node.js Cluster Mode (`NODE_ENV=production`)**: Executed via PM2 process manager (`pm2 start server.js -i max`) utilizing multi-core CPU architectures.
+- **Environment Validation Startup Gate (`config/envValidation.js`)**: Server initialization executes `validateEnvironment()`, verifying mandatory production environment variables (`JWT_SECRET`, `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `FRONTEND_URL`) before listening on ports.
 
 ---
 
 ## 16. Database Operations & Disaster Recovery (`config/database.js`)
 
-1. **Dedicated Database User (`campusconnect_app`)**: Application connects strictly via non-superuser credentials. Superuser (`postgres`) access is blocked.
-2. **Private Network Isolation**: Database binds strictly to private VPC subnets with public internet ingress blocked.
-3. **Connection Pooling & Timeouts**: Enforces connection limits (`max: 20`) and query execution timeouts (`statement_timeout: 5000ms`).
-4. **Automated Backups & Monthly Restore Verification**: Daily `pg_dump` logical backups and WAL archives undergo automated monthly restore verification into isolated staging containers (`pg_restore` pipeline) to prove recovery reliability. *A backup that cannot be restored is not a reliable recovery strategy.*
+1. **Dedicated Database User (`campusconnect_app`)**: Application connects strictly via non-superuser credentials (`campusconnect_app`). Application connection strings using superuser accounts (`postgres`) are strictly blocked.
+2. **Least-Privilege Role Permissions**: `campusconnect_app` is granted strictly required DML permissions (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) on target schema tables.
+3. **Private Network Isolation**: Database binds strictly to private VPC network subnets with public internet ingress blocked.
+4. **Connection Pooling & Execution Timeouts**: Managed via `pg.Pool` (`max: 20` connections, `idleTimeoutMillis: 30000`, `connectionTimeoutMillis: 2000`). Enforces query execution limits (`statement_timeout: 5000ms`).
+5. **Automated Backups & Monthly Restore Verification**:
+   - **Daily Logical Backups**: Automated `pg_dump` logical backups combined with Write-Ahead Logging (WAL) point-in-time recovery archives.
+   - **Automated Monthly Restore Verification**: Backups undergo automated monthly restore verification into isolated staging containers (`pg_restore` verification pipeline) to prove recovery reliability. *A backup that cannot be restored is not a reliable recovery strategy.*
 
 ---
 
