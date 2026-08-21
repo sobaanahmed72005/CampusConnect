@@ -9,7 +9,8 @@
     "test": "jest",
     "db:migrate": "node scripts/migrate.js",
     "db:setup": "node scripts/setupDb.js",
-    "db:seed": "node scripts/seedDb.js"
+    "db:seed": "node scripts/seedDb.js",
+    "db:test-restore": "node scripts/backupRestoreTest.js"
   },
   "keywords": [],
   "author": "",

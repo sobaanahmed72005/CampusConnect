@@ -37,12 +37,12 @@ describe('Phase 3 — Production Readiness Architecture Suite', () => {
   })
 
   describe('2. Disaster Recovery & Monthly Restore Testing Criteria', () => {
-    test('Automated restore verification pipeline flags unrestorable backup archives as non-compliant', () => {
-      const isBackupRestorable = true
-      const isRestoreTestedMonthly = true
+    const { runBackupRestoreVerification } = require('../scripts/backupRestoreTest')
 
-      expect(isBackupRestorable).toBe(true)
-      expect(isRestoreTestedMonthly).toBe(true)
+    test('Automated restore verification pipeline executes clean dump generation, SHA-256 calculation, and database restoration', async () => {
+      const result = await runBackupRestoreVerification()
+      expect(result.success).toBe(true)
+      expect(result.checksum).toBeDefined()
     })
 
     test('SIGTERM and SIGINT graceful shutdown signal handlers are registered', () => {
