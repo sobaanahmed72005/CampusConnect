@@ -38,6 +38,7 @@ app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   xFrameOptions: { action: 'deny' },
   xContentTypeOptions: true,
+  strictTransportSecurity: isProd ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
 }))
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
