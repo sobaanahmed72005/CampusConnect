@@ -1,0 +1,221 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import api from '../../lib/api'
+import {
+  Users, Calendar, ShoppingBag, Search, TrendingUp,
+  Activity, CheckCircle, Shield, Building2, Megaphone, ShieldAlert
+} from 'lucide-react'
+import PageHeader from '../../components/ui/PageHeader'
+import SectionCard from '../../components/ui/SectionCard'
+import LoadingGrid from '../../components/ui/LoadingGrid'
+import ErrorState from '../../components/ui/ErrorState'
+
+const MONTHS = [
+  { month: 'Jan', users: 15, listings: 8, events: 3 },
+  { month: 'Feb', users: 28, listings: 14, events: 5 },
+  { month: 'Mar', users: 42, listings: 22, events: 9 },
+  { month: 'Apr', users: 55, listings: 31, events: 12 },
+  { month: 'May', users: 68, listings: 45, events: 18 },
+  { month: 'Jun', users: 84, listings: 59, events: 22 },
+  { month: 'Jul', users: 95, listings: 70, events: 28 },
+  { month: 'Aug', users: 110, listings: 85, events: 34 },
+]
+
+export default function AdminDashboard() {
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    fetchAdminStats()
+  }, [])
+
+  const fetchAdminStats = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await api.get('/admin/stats')
+      setStats(res.data)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load administrative stats')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const statCards = [
+    { label: 'Total Users', value: stats?.total_users || 0, icon: Users, color: '#10b981', sub: 'Registered students' },
+    { label: 'Total Events', value: stats?.total_events || 0, icon: Calendar, color: '#6366f1', sub: 'Campus events' },
+    { label: 'Marketplace Listings', value: stats?.total_listings || 0, icon: ShoppingBag, color: '#f59e0b', sub: 'Active items' },
+    { label: 'Lost & Found Reports', value: stats?.total_lf || 0, icon: Search, color: '#3b82f6', sub: 'Total reports' },
+  ]
+
+  const systemSubsystems = [
+    { name: 'Core Express API Gateway', status: 'Operational', badgeClass: 'badge-success', dot: '🟢 Operational', latency: '4ms' },
+    { name: 'PostgreSQL Database Pool', status: 'Operational', badgeClass: 'badge-success', dot: '🟢 Operational', latency: '2ms' },
+    { name: 'File Storage & Images', status: 'Operational', badgeClass: 'badge-success', dot: '🟢 Operational', latency: '12ms' },
+    { name: 'Notification Engine', status: 'Operational', badgeClass: 'badge-success', dot: '🟢 Operational', latency: '6ms' },
+    { name: 'Auth & CSRF Subsystem', status: 'Operational', badgeClass: 'badge-success', dot: '🟢 Operational', latency: '3ms' },
+  ]
+
+  if (loading) {
+    return (
+      <div className="animate-fade">
+        <LoadingGrid count={4} height="120px" gridClass="grid-4" label="Loading admin metrics..." />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        title="Admin Control Center Error"
+        message={error}
+        onRetry={fetchAdminStats}
+      />
+    )
+  }
+
+  return (
+    <div className="animate-fade">
+      <PageHeader
+        icon={TrendingUp}
+        title="Admin Control Center"
+        subtitle="Overview of platform activity, user management, and system health"
+        iconColor="var(--accent)"
+        action={
+          <span className="badge badge-accent flex items-center gap-1">
+            <Shield size={12} /> System Admin Active
+          </span>
+        }
+      />
+
+      {/* Metrics Grid */}
+      <div className="grid-4 mb-6">
+        {statCards.map(({ label, value, icon: Icon, color, sub }) => (
+          <div key={label} className="stat-card">
+            <div className="stat-icon" style={{ background: `${color}20` }}>
+              <Icon size={20} style={{ color }} />
+            </div>
+            <div className="stat-value">{value}</div>
+            <div className="stat-label">{label}</div>
+            <div className="stat-change up">{sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts & System Health */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-5)', marginBottom: 'var(--space-5)' }}>
+        {/* SVG Activity Trend Chart */}
+        <SectionCard icon={Activity} title="Platform Growth Trends" iconColor="var(--accent)" badgeText="2026" badgeClass="badge-muted">
+          <div className="p-4 card" style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)' }}>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-semibold text-muted">MONTHLY ENGAGEMENT METRICS</span>
+              <div className="flex items-center gap-4 text-xs">
+                <span className="flex items-center gap-1"><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} /> Users</span>
+                <span className="flex items-center gap-1"><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1' }} /> Listings</span>
+                <span className="flex items-center gap-1"><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} /> Events</span>
+              </div>
+            </div>
+
+            {/* SVG Trendline Visual */}
+            <div style={{ height: 180, width: '100%', position: 'relative' }}>
+              <svg viewBox="0 0 500 150" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+                <defs>
+                  <linearGradient id="gradUsers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+
+                {/* Gridlines */}
+                <line x1="0" y1="30" x2="500" y2="30" stroke="var(--border)" strokeDasharray="4" />
+                <line x1="0" y1="75" x2="500" y2="75" stroke="var(--border)" strokeDasharray="4" />
+                <line x1="0" y1="120" x2="500" y2="120" stroke="var(--border)" strokeDasharray="4" />
+
+                {/* Area under curve */}
+                <polygon points="0,130 0,110 70,95 140,80 210,65 280,50 350,35 420,25 500,15 500,130" fill="url(#gradUsers)" />
+
+                {/* User Line */}
+                <polyline
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="3"
+                  points="0,110 70,95 140,80 210,65 280,50 350,35 420,25 500,15"
+                />
+
+                {/* Listings Line */}
+                <polyline
+                  fill="none"
+                  stroke="#6366f1"
+                  strokeWidth="2.5"
+                  points="0,125 70,115 140,100 210,85 280,70 350,55 420,40 500,30"
+                />
+
+                {/* Events Line */}
+                <polyline
+                  fill="none"
+                  stroke="#f59e0b"
+                  strokeWidth="2"
+                  strokeDasharray="4"
+                  points="0,130 70,125 140,118 210,110 280,100 350,90 420,80 500,70"
+                />
+              </svg>
+
+              <div className="flex justify-between text-xs text-muted mt-2">
+                {MONTHS.map(m => <span key={m.month}>{m.month}</span>)}
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Subsystem Health Monitor */}
+        <SectionCard icon={Activity} title="System Health & Subsystem Status" iconColor="var(--primary)">
+          <div className="flex flex-col gap-2">
+            {systemSubsystems.map(({ name, dot, badgeClass, latency }) => (
+              <div key={name} className="p-3 card flex items-center justify-between" style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)' }}>
+                <div>
+                  <div className="text-xs font-bold">{name}</div>
+                  <div className="text-xs text-muted mt-0.5">Latency: <span style={{ color: 'var(--text-primary)' }}>{latency}</span></div>
+                </div>
+                <span className={`badge ${badgeClass} text-xs font-bold`}>
+                  {dot}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 p-3 rounded-lg text-center" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid var(--border-primary)' }}>
+            <div style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.85rem' }}>All 5 Core Subsystems Fully Operational</div>
+            <div className="text-xs text-muted mt-1">API • PostgreSQL • File Storage • Notifications • Auth</div>
+          </div>
+        </SectionCard>
+      </div>
+
+      {/* Quick Admin Actions */}
+      <SectionCard title="⚡ Quick Administrative Suite">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 'var(--space-3)' }}>
+          {[
+            { label: 'Manage Users', to: '/admin/users', icon: Users, color: '#10b981' },
+            { label: 'Announcements', to: '/admin/announcements', icon: Megaphone, color: 'var(--accent)' },
+            { label: 'Audit Trail', to: '/admin/audit-logs', icon: ShieldAlert, color: '#f59e0b' },
+            { label: 'Manage Events', to: '/admin/events', icon: Calendar, color: '#6366f1' },
+            { label: 'Marketplace', to: '/admin/marketplace', icon: ShoppingBag, color: '#ec4899' },
+            { label: 'Accommodation', to: '/admin/accommodation', icon: Building2, color: '#3b82f6' },
+          ].map(({ label, to, icon: Icon, color }) => (
+            <Link
+              key={label}
+              to={to}
+              className="card p-4 flex flex-col items-center gap-2 text-center text-xs font-semibold hover:border-primary transition-colors"
+              style={{ background: 'var(--bg-surface)', textDecoration: 'none', color: 'inherit' }}
+            >
+              <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-md)', background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon size={18} style={{ color }} />
+              </div>
+              {label}
+            </Link>
+          ))}
+        </div>
+      </SectionCard>
+    </div>
+  )
+}

@@ -1,0 +1,26 @@
+.marketplace-hero {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(16,185,129,0.08));
+  border: 1px solid var(--border); border-radius: var(--radius-xl);
+  padding: var(--space-8); margin-bottom: var(--space-6); gap: var(--space-4);
+}
+.marketplace-stats { display: flex; gap: var(--space-5); margin-top: var(--space-3); font-size: 0.875rem; color: var(--text-muted); }
+.marketplace-toolbar { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4); flex-wrap: wrap; }
+.marketplace-filters { display: flex; gap: var(--space-2); }
+.category-chips { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-5); }
+
+.products-grid { margin-top: 0; }
+.product-card { padding: 0; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; }
+.product-img { position: relative; height: 180px; background: var(--bg-surface); overflow: hidden; }
+.product-img img { transition: transform 0.4s ease; }
+.product-card:hover .product-img img { transform: scale(1.05); }
+.product-img-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); }
+.product-condition-badge { position: absolute; top: 10px; left: 10px; }
+.product-views { position: absolute; bottom: 10px; right: 10px; display: flex; align-items: center; gap: 3px; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); color: white; font-size: 0.7rem; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-full); }
+.product-body { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-1); flex: 1; }
+.product-category { font-size: 0.7rem; font-weight: 600; color: var(--accent-light); text-transform: uppercase; letter-spacing: 0.04em; }
+.product-title { font-size: 0.9rem; font-weight: 700; line-height: 1.3; }
+.product-price-row { display: flex; align-items: center; gap: var(--space-2); margin-top: 4px; }
+.product-seller { display: flex; align-items: center; gap: var(--space-2); margin-top: auto; padding-top: var(--space-2); }
+
+@media (max-width: 768px) { .marketplace-hero { flex-direction: column; } .marketplace-toolbar { flex-direction: column; align-items: stretch; } }

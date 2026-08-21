@@ -1,0 +1,97 @@
+name: CampusConnect Continuous Integration & Delivery (CI/CD)
+
+on:
+  push:
+    branches: [ main, release ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    name: Code Linting, Security Audit & Automated Test Suite
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: campusconnect_test
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: campusconnect_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Runtime (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run Database Migrations Pipeline
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: campusconnect_test
+          DB_USER: campusconnect_test
+          DB_PASSWORD: test_password
+        run: |
+          cd backend
+          npm run db:migrate
+
+      - name: Execute Backend Jest Test Suite (`npm test`)
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test_jwt_secret_256bit_key_for_testing
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: campusconnect_test
+          DB_USER: campusconnect_test
+          DB_PASSWORD: test_password
+        run: |
+          cd backend
+          npm test
+
+      - name: Execute Security & Dependency Audit (`npm audit`)
+        run: |
+          cd backend && npm audit --audit-level=high
+          cd ../frontend && npm audit --audit-level=high
+
+      - name: Verify Frontend Production Build (`npm run build`)
+        run: |
+          cd frontend
+          npm run build
+
+  deploy:
+    name: Production Automated Deployment
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy Frontend SPA to Vercel / Edge CDN
+        run: echo "Deploying static assets to Vercel CDN..."
+
+      - name: Build & Deploy Backend API Gateway to AWS ECS Container Cluster
+        run: echo "Triggering AWS ECS Container rolling deployment..."

@@ -1,0 +1,15 @@
+.accom-toolbar { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-5); flex-wrap: wrap; }
+.hostels-grid { margin-top: 0; }
+.hostel-card { padding: 0; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; }
+.hostel-img { position: relative; height: 200px; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.hostel-img img { transition: transform 0.4s ease; }
+.hostel-card:hover .hostel-img img { transform: scale(1.04); }
+.hostel-availability { position: absolute; top: 12px; right: 12px; }
+.hostel-body { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+.hostel-price { display: flex; align-items: baseline; gap: 4px; margin-top: 4px; }
+.hostel-rating { display: flex; align-items: center; gap: 3px; font-size: 0.8rem; font-weight: 700; color: var(--warning); }
+.hostel-facilities { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.facility-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-full); font-size: 0.7rem; color: var(--text-muted); }
+.hostel-types { display: flex; gap: 6px; flex-wrap: wrap; }
+.badge-sm { padding: 2px 7px; font-size: 0.65rem; }
+@media (max-width: 768px) { .accom-toolbar { flex-direction: column; align-items: stretch; } }

@@ -1,0 +1,3 @@
+.notif-item { transition: all var(--transition); }
+.notif-item:hover { border-color: var(--border-strong); }
+.notif-unread { border-left: 3px solid var(--primary); background: var(--primary-50); }
