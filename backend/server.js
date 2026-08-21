@@ -189,12 +189,27 @@ app.use((err, req, res, next) => {
 })
 
 const { applyDatabaseInvariants } = require('./config/schemaInvariants')
+const db = require('./config/database')
 
 const PORT = process.env.PORT || 5000
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 CampusConnect Backend running on http://localhost:${PORT}`)
   console.log(`📦 Environment: ${process.env.NODE_ENV}`)
   applyDatabaseInvariants()
+})
+
+process.on('SIGTERM', () => {
+  console.log('🛑 Received SIGTERM. Closing server gracefully...')
+  server.close(() => {
+    console.log('✅ HTTP server closed.')
+  })
+})
+
+process.on('SIGINT', () => {
+  console.log('🛑 Received SIGINT. Closing server gracefully...')
+  server.close(() => {
+    console.log('✅ HTTP server closed.')
+  })
 })
 
 module.exports = app

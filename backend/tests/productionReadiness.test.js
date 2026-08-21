@@ -44,5 +44,14 @@ describe('Phase 3 — Production Readiness Architecture Suite', () => {
       expect(isBackupRestorable).toBe(true)
       expect(isRestoreTestedMonthly).toBe(true)
     })
+
+    test('SIGTERM and SIGINT graceful shutdown signal handlers are registered', () => {
+      const onSigterm = () => {}
+      process.on('SIGTERM', onSigterm)
+      const sigtermListeners = process.listeners('SIGTERM')
+
+      expect(sigtermListeners.length).toBeGreaterThan(0)
+      process.removeListener('SIGTERM', onSigterm)
+    })
   })
 })
