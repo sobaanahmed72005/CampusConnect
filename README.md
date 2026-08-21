@@ -1536,67 +1536,99 @@ CampusConnect v1 Production Architecture Core
 5. ❌ **AI Chatbots & LLM Widgets**: Deterministic algorithmic formulas (such as the Lost & Found 35-25-25-15 match score) eliminate non-deterministic latency and hallucination risks.
 6. ❌ **Elasticsearch / Dedicated Search Clusters**: PostgreSQL B-Tree indexes (`idx_marketplace_created`, `idx_users_email`) handle catalog search queries in under 10 ms CPU time.
 7. ❌ **Premature Redis Caching**: In-memory sliding-window rate limiting and SWR frontend state caching (`useServerQuery.js`) deliver rapid response times without extra infrastructure nodes.
-## 8. API Security & Governance Matrix (Phase 5 — API Maturity)
+## 8. Precise API Inventory & Governance Matrix (Phase 6 — API Maturity)
 
-API governance follows an explicit **Phase 5 — API Maturity Architecture Pipeline**:
+API governance follows an explicit **Phase 6 — Precise API Coverage Architecture**:
 
 ```
-Phase 5 — API Maturity Pipeline
-┌────────────────────────────────────────────────────────┐
-1. Complete 27-Endpoint API Governance Matrix            │
-   (Explicit Auth, CSRF, Rate Limit & RBAC rules)        │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
-┌────────────────────────────────────────────────────────┐
-2. OpenAPI 3.0.3 Machine-Readable Specification          │
-   (Machine-readable API contract in backend/openapi.json)│
-└────────────┬───────────────────────────────────────────┘
-             │
-             ▼
-┌────────────────────────────────────────────────────────┐
-3. Automated API Contract Validation Test Suite          │
-   (openapiContract.test.js prevents documentation drift)│
-└────────────┬───────────────────────────────────────────┘
-             │
-             ▼
-┌────────────────────────────────────────────────────────┐
-4. Classified Error Codes & DB Error Sanitization        │
-   (VALIDATION_ERROR, CSRF_FAILURE, DATABASE_ERROR, etc.)│
-└────────────────────────────────────────────────────────┘
+CampusConnect Route Hierarchy Inventory
+Authentication Subsystem (/api/auth)
+├── POST /register             # Register student account (@nu.edu.pk domain required)
+├── POST /login                # Authenticate credentials & issue HttpOnly session JWT cookie
+├── POST /logout               # Single-device logout (clears client cookies)
+├── POST /logout-all           # Multi-device session revocation (session_version++)
+├── GET  /me                   # Retrieve authenticated user profile & session state
+├── GET  /csrf-token           # Issue 256-bit Double-Submit Anti-CSRF cookie
+├── POST /forgot-password      # Request password reset token (Rate limited: 3/hr)
+├── POST /reset-password       # Execute password reset (Rate limited: 5/15m)
+└── POST /verify-email         # Verify email confirmation token
+
+Announcements Subsystem (/api/announcements)
+├── GET  /                     # Fetch campus announcements catalog
+└── POST /                     # Create campus announcement (Admin only)
+
+Marketplace Subsystem (/api/marketplace)
+├── GET  /                     # Search & filter marketplace items (LIMIT/OFFSET pagination)
+├── POST /                     # Create product listing (Auth required)
+├── PUT  /:id/sold             # Mark product listing as sold (Owner only)
+└── DELETE /:id                # Delete product listing (Owner / Admin only)
+
+Campus Events Subsystem (/api/events)
+├── GET  /                     # Fetch campus events catalog
+├── POST /                     # Create campus event (Admin only)
+└── POST /:id/register         # Register for campus event (SELECT FOR UPDATE ACID transaction lock)
+
+Lost & Found Subsystem (/api/lost-found)
+├── GET  /                     # Fetch lost & found item reports
+├── POST /                     # Submit lost/found item report (35-25-25-15 match score engine)
+└── PUT  /:id/claim            # Mark item as claimed (Reporter / Admin only)
+
+Accommodation Subsystem (/api/accommodation)
+├── GET  /                     # Fetch hostel listings (Distance & rent bounds filtering)
+└── POST /                     # Create hostel listing (Auth required)
+
+Profile & User Settings Subsystem (/api/profile)
+├── GET  /                     # Get personal profile details
+├── PUT  /                     # Update personal profile
+├── GET  /listings             # Get seller's active marketplace listings
+├── GET  /events               # Get student's registered campus events
+├── POST /change-password      # Change password (session_version++ across all devices)
+└── DELETE /account            # Deactivate student account (is_active = false)
+
+Notifications Subsystem (/api/notifications)
+├── GET  /                     # Fetch student notifications & unread count
+└── PUT  /:id/read             # Mark notification as read
+
+Admin Subsystem (/api/admin)
+├── GET  /users                # Manage user accounts & role assignments (Admin only)
+├── PUT  /users/:id/role       # Promote / Demote user role (Admin only)
+├── PUT  /users/:id/status     # Suspend / Activate user account (Admin only)
+├── GET  /stats                # Fetch admin metrics & 5-subsystem health indicators (Admin only)
+├── GET  /audit-logs           # Inspect security audit trail logs (Admin only)
+└── GET  /system-health        # Real-time process health & performance indicators (Admin only)
 ```
 
-### 8.1 Complete 27-Endpoint Security & Governance Matrix
+### 8.1 Complete API Endpoint Governance Matrix
 
-| Method | API Endpoint Route | Auth Required | CSRF Guard | Rate Limit Category | Access Level / Permission Check |
-|---|---|---|---|---|---|
-| `POST` | `/api/auth/register` | ❌ Public | ✅ Enforced | `registerLimiter` | Student (`@nu.edu.pk` domain enforced) |
-| `POST` | `/api/auth/login` | ❌ Public | ✅ Enforced | `loginLimiter` | Authenticated Credentials |
-| `POST` | `/api/auth/logout` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Authenticated User Session |
-| `POST` | `/api/auth/logout-all` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Authenticated User Session (`session_version++`) |
-| `GET` | `/api/auth/me` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Authenticated User Session |
-| `POST` | `/api/auth/forgot-password`| ❌ Public | ✅ Enforced | `resetLimiter` | Generic Enumeration Protection |
-| `POST` | `/api/auth/reset-password` | ❌ Public | ✅ Enforced | `resetLimiter` | Valid 256-bit Reset Token |
-| `GET` | `/api/csrf-token` | ❌ Public | ❌ Issue CSRF | `apiLimiter` | Public CSRF Token Generation |
-| `GET` | `/api/announcements` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Authenticated User Session |
-| `POST` | `/api/announcements` | ✅ Cookie JWT | ✅ Enforced | `adminLimiter` | Admin (`role === 'admin'`) |
-| `GET` | `/api/marketplace` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Filter & Pagination Parameters |
-| `POST` | `/api/marketplace` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Authenticated Student Seller |
-| `GET` | `/api/marketplace/:id` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Authenticated User Session |
-| `PUT` | `/api/marketplace/:id/sold` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Resource Owner (`seller_id === req.user.id`) |
-| `DELETE`| `/api/marketplace/:id` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Resource Owner or Admin |
-| `GET` | `/api/events` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Authenticated User Session |
-| `POST` | `/api/events` | ✅ Cookie JWT | ✅ Enforced | `adminLimiter` | Admin (`role === 'admin'`) |
-| `POST` | `/api/events/:id/register` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | `SELECT FOR UPDATE` ACID Transaction |
-| `GET` | `/api/lost-found` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Match Confidence Calculation |
-| `POST` | `/api/lost-found` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Authenticated Reporter |
-| `GET` | `/api/accommodation` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Campus Distance & Rent Filters |
-| `POST` | `/api/accommodation` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Authenticated Listing Owner |
-| `GET` | `/api/profile` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Authenticated User Session |
-| `PUT` | `/api/profile` | ✅ Cookie JWT | ✅ Enforced | `apiLimiter` | Authenticated User Session |
-| `GET` | `/api/notifications` | ✅ Cookie JWT | ❌ Read Only | `apiLimiter` | Authenticated User Session |
-| `GET` | `/api/admin/users` | ✅ Cookie JWT | ❌ Read Only | `adminLimiter` | Admin (`role === 'admin'`) |
-| `GET` | `/api/admin/system-health` | ✅ Cookie JWT | ❌ Read Only | `adminLimiter` | Admin System Metrics Monitor |
+| Subsystem & Endpoint | Method | Auth | Role | Validation Schema | Rate Limit | Status Codes | Test Coverage |
+|---|---|---|---|---|---|---|---|
+| `/api/auth/register` | `POST` | Public | None | `@nu.edu.pk` email, min 8 char pass | 5 req / min | `201`, `400` | ✅ Unit & Integration |
+| `/api/auth/login` | `POST` | Public | None | Email, Password | 5 req / min | `200`, `401` | ✅ Unit & Integration |
+| `/api/auth/logout` | `POST` | Public | None | None | None | `200` | ✅ Integration |
+| `/api/auth/logout-all` | `POST` | Auth | Any | Valid session | None | `200`, `401` | ✅ Integration |
+| `/api/auth/me` | `GET` | Auth | Any | None | None | `200`, `401` | ✅ Integration |
+| `/api/auth/csrf-token` | `GET` | Public | None | None | None | `200` | ✅ Integration |
+| `/api/auth/forgot-password` | `POST` | Public | None | Email | 3 req / hr | `200`, `400` | ✅ Integration |
+| `/api/auth/reset-password` | `POST` | Public | None | Reset token, new password | 5 req / 15m | `200`, `400` | ✅ Integration |
+| `/api/announcements` | `GET` | Auth | Any | Pagination parameters | None | `200`, `401` | ✅ Integration |
+| `/api/announcements` | `POST` | Auth | Admin | Title (min 3), Content | None | `201`, `403` | ✅ Integration |
+| `/api/marketplace` | `GET` | Auth | Any | Search, category, min/max price | None | `200`, `401` | ✅ Integration |
+| `/api/marketplace` | `POST` | Auth | Any | Title, price (gte 0), category | None | `201`, `400` | ✅ Integration |
+| `/api/marketplace/:id/sold` | `PUT` | Auth | Owner | Valid UUID `:id` | None | `200`, `403` | ✅ Integration |
+| `/api/events` | `GET` | Auth | Any | Category, date filters | None | `200`, `401` | ✅ Integration |
+| `/api/events` | `POST` | Auth | Admin | Title, date, capacity (gte 1) | None | `201`, `403` | ✅ Integration |
+| `/api/events/:id/register` | `POST` | Auth | Any | Valid UUID `:id` | None | `200`, `400` | ✅ ACID Integration |
+| `/api/lost-found` | `GET` | Auth | Any | Category, item_type | None | `200`, `401` | ✅ Integration |
+| `/api/lost-found` | `POST` | Auth | Any | Title, category, location, date | None | `201`, `400` | ✅ Match Engine Unit |
+| `/api/accommodation` | `GET` | Auth | Any | Max rent, max distance | None | `200`, `401` | ✅ Integration |
+| `/api/profile` | `GET` | Auth | Any | None | None | `200`, `401` | ✅ Integration |
+| `/api/profile/change-password` | `POST` | Auth | Any | Current password, new password | None | `200`, `400` | ✅ Session Invalidation |
+| `/api/profile/account` | `DELETE` | Auth | Any | Password confirmation | None | `200`, `401` | ✅ Integration |
+| `/api/admin/users` | `GET` | Auth | Admin | Pagination parameters | None | `200`, `403` | ✅ Integration |
+| `/api/admin/users/:id/status` | `PUT` | Auth | Admin | Valid UUID `:id`, `is_active` bool | None | `200`, `403` | ✅ Account Disablement |
+| `/api/admin/stats` | `GET` | Auth | Admin | None | None | `200`, `403` | ✅ Integration |
+| `/api/admin/audit-logs` | `GET` | Auth | Admin | Date range, action filter | None | `200`, `403` | ✅ Integration |
+| `/api/admin/system-health` | `GET` | Auth | Admin | None | None | `200`, `403` | ✅ Health Probe Integration |
 ## 16. Production Database & Security Operations Architecture (Phase 4 — Operations)
 
 Database security governance follows an explicit **Phase 4 — Database & Security Operations Architecture**:
