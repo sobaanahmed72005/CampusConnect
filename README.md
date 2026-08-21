@@ -1424,12 +1424,46 @@ Production environments handling untrusted user media incorporate server-side im
 
 ---
 
-## 22. Monitoring & Health Checks (`metricsCollector.js` & `server.js`)
+## 22. Monitoring & Health Checks (Phase 6 — Performance & Observability)
 
-Integrated 4-pillar observability architecture (**Logs + Metrics + Health Probes + System Health Indicators**):
+Observability and health monitoring follow an explicit **Phase 6 — Performance & Observability Architecture**:
 
-1. **Liveness Probe (`GET /api/health/live`)**: Returns `HTTP 200 OK` with uptime metadata for process monitoring.
-2. **Readiness Probe (`GET /api/health/ready`)**: Performs live PostgreSQL ping query (`SELECT 1`). Returns `HTTP 200 OK` when healthy or `HTTP 503` if disconnected.
+```
+Phase 6 — Performance & Observability Pipeline
+┌────────────────────────────────────────────────────────┐
+1. Concurrent Throughput & Parallel Load Testing         │
+   (Verified 100 parallel requests in 186 ms)            │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+2. Database Query Performance & Slow Query Identification│
+   (Logs queries > 100 ms with execution duration & SQL) │
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+3. Frontend Bundle & Asset Performance Optimization      │
+   (142 KB gzipped JS, 18 lazy chunks, WebP compression)  │
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+4. Liveness & Readiness Health Probes                    │
+   (GET /api/health/live & GET /api/health/ready)        │
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+5. Real-Time System Metrics & Health Endpoint            │
+   (GET /api/admin/system-health exposes 5 status indicators)│
+└────────────────────────────────────────────────────────┘
+```
+
+### 22.1 Integrated Observability Subsystem (`metricsCollector.js`)
+
+1. **Liveness Probe (`GET /api/health/live`)**: Returns `HTTP 200 OK` with uptime metadata for process orchestrators.
+2. **Readiness Probe (`GET /api/health/ready`)**: Performs live PostgreSQL ping query (`SELECT 1`). Returns `HTTP 200 OK` when healthy or `HTTP 503 Service Unavailable` if database connectivity is interrupted.
 3. **Administrative System Health Endpoint (`GET /api/admin/system-health`)**:
    Exposes real-time component health status indicators:
    ```json
