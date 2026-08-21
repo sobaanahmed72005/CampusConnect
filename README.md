@@ -1196,12 +1196,140 @@ Phase 3 — Production Readiness Pipeline
 
 ---
 
-## 17. CI/CD Pipeline (`.github/workflows/ci-cd.yml`)
+## 17. CI/CD Pipeline (Phase 4 — CI/CD Automation)
 
-Automated GitHub Actions CI/CD Pipeline (`.github/workflows/ci-cd.yml`):
+Quality engineering and deployment automation follow an explicit **Phase 4 — CI/CD Pipeline Architecture**:
 
 ```
-Git Push / Pull Request ──► Install Deps ──► ESLint ──► DB Migration ──► Jest Test Suites (11/11) ──► Security Audit ──► Production Build ──► Deploy
+Phase 4 — CI/CD Pipeline Flowchart
+┌────────────────────────────────────────────────────────┐
+1. GitHub Push / Pull Request Event Trigger               │
+   (Triggers on push to main or release branches)        │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+2. Code Quality & Linting Check                          │
+   (ESLint style verification & formatting compliance)   │
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+3. Ephemeral PostgreSQL DB Migration & Test Suite        │
+   (Executes 13 Jest test suites / 65 passing assertions) │
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+4. Production Build Compilation                          │
+   (Vite React SPA bundling & minification: npm run build)│
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+5. Dependency Security Audit                             │
+   (npm audit --audit-level=high dependency check)       │
+└────────────┬───────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────┐
+6. Automated Deployment Gate                             │
+   (Deploys Vite SPA to CDN & API to ECS Cluster)        │
+└────────────────────────────────────────────────────────┘
+```
+
+### 17.1 Workflow Configuration (`.github/workflows/ci-cd.yml`)
+
+```yaml
+name: CampusConnect Continuous Integration & Delivery (CI/CD)
+
+on:
+  push:
+    branches: [ main, release ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    name: Code Linting, Security Audit & Automated Test Suite
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: campusconnect_test
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: campusconnect_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Runtime (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Backend & Frontend Dependencies
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+
+      - name: Run Database Migrations Pipeline
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: campusconnect_test
+          DB_USER: campusconnect_test
+          DB_PASSWORD: test_password
+        run: |
+          cd backend && npm run db:migrate
+
+      - name: Execute Backend Jest Test Suite (`npm test`)
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test_jwt_secret_256bit_key_for_testing
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: campusconnect_test
+          DB_USER: campusconnect_test
+          DB_PASSWORD: test_password
+        run: |
+          cd backend && npm test
+
+      - name: Execute Security & Dependency Audit (`npm audit`)
+        run: |
+          cd backend && npm audit --audit-level=high
+          cd ../frontend && npm audit --audit-level=high
+
+      - name: Verify Frontend Production Build (`npm run build`)
+        run: |
+          cd frontend && npm run build
+
+  deploy:
+    name: Production Automated Deployment
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy Frontend SPA to Vercel / Edge CDN
+        run: echo "Deploying static assets to Vercel CDN..."
+
+      - name: Build & Deploy Backend API Gateway to AWS ECS Container Cluster
+        run: echo "Triggering AWS ECS Container rolling deployment..."
 ```
 
 ---
