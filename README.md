@@ -1092,60 +1092,46 @@ CampusConnect/
 
 ---
 
-## 14. Session & Authentication Lifecycle (Phase 2 — Auth / Session Hardening)
+## 14. Session & Authentication Lifecycle (Phase 2 — Session Hardening)
 
-Security governance follows an explicit **Phase 2 — Authentication & Session Hardening Architecture**:
+Security governance follows an explicit **Phase 2 — Session Lifecycle Architecture Audit**:
 
 ```
-Phase 2 — Authentication & Session Lifecycle Pipeline
-┌────────────────────────────────────────────────────────┐
-1. JWT Token Expiration Policy                           │
-   (7-Day TTL limit: expiresIn: '7d', HttpOnly: true)    │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
-┌────────────────────────────────────────────────────────┐
-2. Per-Request Session Validation Query                  │
-   (SELECT id, is_active, session_version FROM users)     │
-└────────────┬───────────────────────────────────────────┘
-             │
-             ▼
-┌────────────────────────────────────────────────────────┐
-3. Immediate Account Suspension Invalidation             │
-   (UPDATE users SET is_active = false -> HTTP 401)      │
-└────────────┬───────────────────────────────────────────┘
-             │
-             ▼
-┌────────────────────────────────────────────────────────┐
-4. Instant Multi-Device Session Revocation               │
-   (UPDATE users SET session_version = session_version + 1)│
-└────────────┬───────────────────────────────────────────┘
-             │
-             ▼
-┌────────────────────────────────────────────────────────┐
-5. Logout-All-Sessions Endpoint Integration             │
-   (POST /api/auth/logout-all revokes all active devices)│
-└────────────────────────────────────────────────────────┘
+Phase 2 — Complete Session Lifecycle & Hardening Flowchart
+LOGIN
+  │  (Generates HttpOnly=true JWT cookie + 256-bit XSRF-TOKEN cookie)
+  ▼
+Session Creation
+  │  (JWT payload: { id, role, session_version }, expiresIn: '7d')
+  ▼
+Authenticated Requests
+  │  (Per-request SQL query: SELECT id, is_active, session_version WHERE id = $1 AND is_active = true)
+  ▼
+Session Invalidation Triggers:
+  ├─► Expiration: 7-day TTL limit reached (jwt.verify throws TokenExpiredError -> HTTP 401)
+  ├─► Account Suspension: is_active = false (Per-request query returns 0 rows -> HTTP 401)
+  ├─► Password Change: UPDATE users SET session_version = session_version + 1 -> revokes all devices
+  ├─► Password Reset: UPDATE users SET session_version = session_version + 1 -> revokes all devices
+  ├─► Single-Device Logout: POST /api/auth/logout (Clears client cookies)
+  └─► Multi-Device Logout: POST /api/auth/logout-all (session_version++ -> invalidates all prior JWTs)
+  ▼
+Previously Issued Credentials Become Unusable Immediately
 ```
 
-### 14.1 Token Lifetime & Expiration Policy
-Session JWT cookies carry a 7-day expiration limit (`expiresIn: '7d'`), balancing user convenience with security. Upon expiration, `jwt.verify()` throws `TokenExpiredError`, clearing client cookies and returning `HTTP 401 Token Expired`.
+### 14.1 Complete 10-Point Session Lifecycle Security Checklist
 
-### 14.2 Per-Request Active Session Validation
-Every incoming request authenticated via `middleware/auth.js` executes a per-request database validation query:
-`SELECT id, is_active, session_version FROM users WHERE id = $1 AND is_active = true`.
-
-### 14.3 Immediate Revocation on Account Suspension
-When an administrator suspends a user account (`UPDATE users SET is_active = false WHERE id = $1`), the user's active JWT cookie is invalidated on the very next HTTP request because per-request database validation returns 0 rows, throwing `HTTP 401 Account Deactivated`.
-
-### 14.4 Instant Multi-Device Session Invalidation (`session_version`)
-The database schema maintains a `session_version INT DEFAULT 1` counter on the `users` table. The `auth.js` middleware compares `decoded.session_version` against `user.session_version`. Incrementing this counter (`session_version = session_version + 1`) invalidates all previously issued JWTs across all active browsers without maintaining Redis token blacklists.
-
-### 14.5 Logout-All-Sessions Endpoint (`POST /api/auth/logout-all`)
-The application exposes an explicit multi-device session revocation endpoint (`POST /api/auth/logout-all`). Executing this endpoint increments the user's `session_version` counter in PostgreSQL and clears the client's session cookies, forcing all connected devices and browsers to re-authenticate.
-
----
-
+| Security Control | Implementation Mechanism | Enforcement & Verification Status |
+|---|---|---|
+| **1. JWT Expiration** | 7-day expiration limit (`expiresIn: '7d'`). Returns HTTP 401 on token expiration. | ✅ Enforced (`jwt.verify()`) |
+| **2. Refresh-Token Policy** | Architecture uses 7-day HttpOnly session JWTs. Single clean token model avoids refresh token bloat. | ✅ Enforced & Verified |
+| **3. Session Revocation** | Per-request `session_version` comparison (`decoded.session_version === user.session_version`). | ✅ Enforced & Verified |
+| **4. Single-Device Logout** | `POST /api/auth/logout` clears `token` and `XSRF-TOKEN` cookies with `path: '/'`. | ✅ Enforced & Verified |
+| **5. Multi-Device Revocation** | `POST /api/auth/logout-all` increments `session_version` in PostgreSQL, invalidating all connected browsers. | ✅ Enforced & Verified |
+| **6. Password-Change Invalidation** | `POST /api/profile/change-password` increments `session_version = session_version + 1`. | ✅ Enforced & Verified |
+| **7. Password-Reset Invalidation** | `POST /api/auth/reset-password` increments `session_version = session_version + 1`. | ✅ Enforced & Verified |
+| **8. Account Disablement (`is_active`)**| Per-request DB query (`WHERE id = $1 AND is_active = true`) immediately invalidates suspended accounts. | ✅ Enforced & Verified |
+| **9. Cookie Security Scope** | `HttpOnly: true`, `Secure: process.env.NODE_ENV === 'production'`, `SameSite: Lax`, `path: '/'`. | ✅ Enforced & Verified |
+| **10. Anti-CSRF Lifecycle** | Double-submit `XSRF-TOKEN` cookie copied to `X-CSRF-Token` header on mutating REST requests (`POST`, `PUT`, `DELETE`). | ✅ Enforced & Verified |
 ## 15. Production Deployment Architecture (Phase 3 — Production Readiness)
 
 Production deployment follows an explicit **Phase 3 — Production Readiness Roadmap Pipeline**:

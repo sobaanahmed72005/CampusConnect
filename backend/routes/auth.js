@@ -239,7 +239,7 @@ router.post('/reset-password', resetPasswordLimiter, [
     const passwordHash = await bcrypt.hash(new_password, 12)
 
     await query(
-      'UPDATE users SET password = $1, reset_token = NULL, reset_expires = NULL, updated_at = NOW() WHERE id = $2',
+      'UPDATE users SET password = $1, session_version = session_version + 1, reset_token = NULL, reset_expires = NULL, updated_at = NOW() WHERE id = $2',
       [passwordHash, user.id]
     )
 
