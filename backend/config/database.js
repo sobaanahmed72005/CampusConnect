@@ -21,11 +21,14 @@ pool.on('error', (err) => {
   process.exit(-1);
 });
 
+const { recordDbQueryLatency } = require('../middleware/metricsCollector')
+
 const query = async (text, params) => {
   const start = Date.now();
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
+    recordDbQueryLatency(duration);
     if (process.env.NODE_ENV === 'development') {
       console.log('📦 Query executed:', { text: text.substring(0, 60), duration, rows: res.rowCount });
     }

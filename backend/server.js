@@ -60,6 +60,11 @@ const { verifyCsrfToken } = require('./middleware/auth')
 // Apply Anti-CSRF verification to state-changing API requests
 app.use('/api', verifyCsrfToken)
 
+const { metricsMiddleware, getSystemMetrics } = require('./middleware/metricsCollector')
+
+// Track system observability metrics across all requests
+app.use(metricsMiddleware)
+
 // Apply API Rate Limiting
 app.use('/api', apiLimiter)
 app.use('/api/admin', adminLimiter)
@@ -112,6 +117,9 @@ app.get('/api/health/ready', async (req, res) => {
       timestamp: new Date().toISOString()
     })
   }
+app.get(['/api/admin/system-health', '/api/admin/metrics'], (req, res) => {
+  const systemHealth = getSystemMetrics()
+  res.json(systemHealth)
 })
 
 // 404 Route Handler
