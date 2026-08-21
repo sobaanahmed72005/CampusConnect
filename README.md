@@ -9,27 +9,60 @@
 
 ```
 c:\Users\LENOVO\.gemini\antigravity-ide\scratch\CampusConnect\
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml                 # Automated 6-stage GitHub Actions CI/CD pipeline
 ├── backend/
+│   ├── openapi.json                  # Machine-readable OpenAPI 3.0.3 REST API contract
 │   ├── config/
-│   │   ├── database.js               # PostgreSQL pool connection & parameter-sanitized query logger
-│   │   └── schemaInvariants.js       # Automated DB schema constraints & index migrations
+│   │   ├── database.js               # PostgreSQL pool connection & query logger
+│   │   ├── schemaInvariants.js       # Automated DB schema constraints & index migrations
+│   │   └── envValidation.js          # Phase 3 Environment startup validation gate
 │   ├── middleware/
-│   │   ├── auth.js                   # JWT HttpOnly cookie auth & verifyCsrfToken middleware
-│   │   ├── rateLimiter.js            # Sliding-window rate limiter (Auth, Password Reset, Admin & API throttling)
-│   │   └── upload.js                 # Multer file upload storage, MIME/Extension allowlist & Magic Byte inspection
+│   │   ├── auth.js                   # JWT HttpOnly cookie auth, session_version & CSRF guard
+│   │   ├── validate.js               # Centralized formal input validation schema middleware
+│   │   ├── metricsCollector.js       # Real-time system metrics & health status collector
+│   │   ├── rateLimiter.js            # Sliding-window rate limiters
+│   │   └── upload.js                 # Multer 5-layer upload validation & Magic Byte inspection
 │   ├── routes/
-│   │   ├── auth.js                   # Register, Login, Logout, Forgot Password, Reset Password, CSRF token
-│   │   ├── announcements.js          # Announcements & Non-blocking in-process notification batching
-│   │   ├── marketplace.js            # Product listings, "Mark as Sold", search, filter, LIMIT/OFFSET pagination (Cursor roadmap)
-│   │   ├── events.js                 # Campus events, category filters, student registrations (ACID Transactions)
-│   │   ├── lostFound.js              # Lost & found reporting, match score calculation algorithm
-│   │   ├── accommodation.js          # Hostel listings, campus distance calculation, gender filters
-│   │   ├── profile.js                # Personal details, Change Password, Deactivate Account
-│   │   ├── notifications.js          # Student notifications, mark read, unread counts
-│   │   └── admin.js                  # User role management, audit logging, admin metrics
-│   └── server.js                     # Express app gateway, Helmet CSP headers, Request ID middleware & structured logging
+│   │   ├── auth.js                   # Auth, Login, Logout, Logout-all, Password Reset
+│   │   ├── announcements.js          # Announcements & non-blocking notification dispatch
+│   │   ├── marketplace.js            # Product listings, "Mark as Sold", search, filters
+│   │   ├── events.js                 # Campus events & SELECT FOR UPDATE ACID transactions
+│   │   ├── lostFound.js              # Lost & found reporting & 35-25-25-15 match engine
+│   │   ├── accommodation.js          # Hostel listings, campus distance & rent bounds
+│   │   ├── profile.js                # Personal details, password change, account deactivation
+│   │   ├── notifications.js          # Student notifications & unread badge counters
+│   │   └── admin.js                  # User role management, audit logs, system health
+│   ├── tests/
+│   │   ├── setup.js                  # Test environment variables & mock setup
+│   │   ├── helpers/
+│   │   │   ├── testDb.js             # Isolated DB connection, table truncation & cleanup
+│   │   │   ├── testServer.js         # Supertest Express HTTP gateway harness
+│   │   │   └── factories.js          # Data factory generators for users, products & events
+│   │   ├── unit/
+│   │   │   ├── auth.test.js          # Email domain, JWT signing & bcrypt unit tests
+│   │   │   ├── validation.test.js    # Schema primitives, UUIDs, enums & pagination unit tests
+│   │   │   ├── rateLimiter.test.js   # Sliding window rate limiter unit tests
+│   │   │   └── matchEngine.test.js   # Lost & Found match score algorithm unit tests
+│   │   └── integration/
+│   │       ├── auth.test.js          # Auth endpoints, CSRF & route guard integration tests
+│   │       ├── marketplace.test.js   # Marketplace endpoints & owner authorization tests
+│   │       ├── events.test.js       # Campus events & SELECT FOR UPDATE ACID transaction tests
+│   │       ├── lostFound.test.js     # Lost & found reporting & match engine integration tests
+│   │       ├── accommodation.test.js # Hostel listings & distance filtering tests
+│   │       └── uploads.test.js       # 5-Layer upload security (Extension, MIME, Magic Bytes) tests
+│   └── server.js                     # Express gateway, Helmet CSP, HSTS & error handler
 │
-└── frontend/
+├── frontend/
+│   ├── index.html                    # Single Page Application HTML root
+│   ├── tests/
+│   │   ├── components/
+│   │   │   ├── ConfirmModal.test.jsx # Modal focus trap, ESC listener & ARIA props tests
+│   │   │   └── Header.test.jsx       # Top bar, unread badge count & Ctrl+K indicator tests
+│   │   └── pages/
+│   │       └── Login.test.jsx        # Login form validation & error handling tests
+│   └── src/
     ├── index.html                    # Single Page Application HTML root ("CampusConnect — Student Campus Management Platform")
     ├── src/
     │   ├── main.jsx                  # React application entry point
