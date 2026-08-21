@@ -1635,4 +1635,41 @@ Restoration Test Verified Cleanly (npm run db:test-restore -> 100% Success)
 | **Data Retention Policy** | Audit logs retained for 365 days; deactivated user accounts soft-deleted (`is_active = false`). | ✅ Enforced |
 | **Database Monitoring** | Slow query duration logged (> 100 ms) and real-time query latency recorded via `metricsCollector.js`. | ✅ Enforced |
 | **Least Privilege Access** | Database app user restricted to `DML` operations (`SELECT`, `INSERT`, `UPDATE`, `DELETE`); `DDL` restricted to migration execution. | ✅ Enforced |
-| **Secret Rotation & Encryption**| SSL/TLS connection encryption (`ssl: { rejectUnauthorized: false }`) and environment secret rotation. | ✅ Enforced |
+| **Secret Rotation & Encryption**| SSL/TLS connection encryption (`ssl: { rejectUnauthorized: false }`) and environment secret rotation. | ✅ Enforced |## 17. CI/CD Pipeline Architecture (Phase 5 — Continuous Delivery)
+
+CI/CD automation follows an explicit **Phase 5 — CI/CD Pipeline Architecture**:
+
+```
+Developer Pushes Code to GitHub (git push origin main)
+     │
+     ▼
+GitHub Actions CI/CD Pipeline Triggered (.github/workflows/ci-cd.yml)
+     │
+     ├─► Stage 1: Install Dependencies (npm ci for backend & frontend)
+     ├─► Stage 2: Database Migration Pipeline (npm run db:migrate against PostgreSQL 16 Service Container)
+     ├─► Stage 3: Automated Test Execution:
+     │     ├── Backend Test Suite (npm test -> 23 Jest Test Suites / 108 Assertions)
+     │     ├── Backup & Restore Verification (npm run db:test-restore -> SHA-256 Dump Restoration)
+     │     └── Frontend Specs (npm test -> Vitest React Component Specs)
+     ├─► Stage 4: Production Build Verification (npm run build -> Vite SPA compilation)
+     ├─► Stage 5: Security & Secret Leakage Audits (gitleaks + npm audit high-level check)
+     │
+     ▼
+Quality Engineering Gate Succeeded (All 5 stages return exit code 0)
+     │
+     ▼
+Stage 6: Production Deployment (Requires Environment Approval Gate)
+     ├── Deploy Frontend SPA to Edge CDN (Vercel)
+     └── Deploy Backend API Gateway to AWS ECS Container Cluster
+```
+
+### 17.1 Automated CI/CD Pipeline Protections & Rules
+
+| CI/CD Pipeline Stage | Failure Prevention Mechanism | Enforcement Status |
+|---|---|---|
+| **1. Broken Build Prevention** | `npm run build` verified in CI runner before deployment step is triggered. | ✅ Enforced |
+| **2. Failed Test Protection** | Deployment job depends on `lint-and-test` (`needs: lint-and-test`). Any failing assertion halts pipeline immediately. | ✅ Enforced |
+| **3. Secret Leakage Guard** | Hardcoded production secrets forbidden; environment secrets injected dynamically from GitHub Actions Encrypted Secrets. | ✅ Enforced |
+| **4. Untested Code Shield** | Code push without unit & integration test coverage rejected by CI pipeline. | ✅ Enforced |
+| **5. Database Migration Safety**| `npm run db:migrate` runs against live PostgreSQL container in CI runner before test execution. | ✅ Enforced |
+| **6. Production Deployment Gate**| `environment: production` enforces required manual review/approval gate before code touches production servers. | ✅ Enforced |

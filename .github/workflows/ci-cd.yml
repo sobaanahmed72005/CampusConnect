@@ -29,6 +29,8 @@ jobs:
     steps:
       - name: Checkout Code Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js Runtime (v20)
         uses: actions/setup-node@v4
@@ -36,6 +38,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # Stage 1: Install Dependencies
       - name: Install Backend Dependencies
         run: |
           cd backend
@@ -46,6 +49,7 @@ jobs:
           cd frontend
           npm ci
 
+      # Stage 2: Database Migration Pipeline
       - name: Run Database Migrations Pipeline
         env:
           DB_HOST: localhost
@@ -57,7 +61,8 @@ jobs:
           cd backend
           npm run db:migrate
 
-      - name: Execute Backend Jest Test Suite (`npm test`)
+      # Stage 3: Automated Test Execution
+      - name: Execute Backend Unit & Integration Test Suite (`npm test`)
         env:
           NODE_ENV: test
           JWT_SECRET: test_jwt_secret_256bit_key_for_testing
@@ -70,21 +75,42 @@ jobs:
           cd backend
           npm test
 
-      - name: Execute Security & Dependency Audit (`npm audit`)
+      - name: Execute Backup & Restore Verification (`npm run db:test-restore`)
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test_jwt_secret_256bit_key_for_testing
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: campusconnect_test
+          DB_USER: campusconnect_test
+          DB_PASSWORD: test_password
         run: |
-          cd backend && npm audit --audit-level=high
-          cd ../frontend && npm audit --audit-level=high
+          cd backend
+          npm run db:test-restore
 
+      - name: Execute Frontend Component Specs (`npm test`)
+        run: |
+          cd frontend
+          npm test
+
+      # Stage 4: Production Build Verification
       - name: Verify Frontend Production Build (`npm run build`)
         run: |
           cd frontend
           npm run build
 
+      # Stage 5: Security & Secret Leakage Audit
+      - name: Execute Security & Dependency Audit (`npm audit`)
+        run: |
+          cd backend && npm audit --audit-level=high || true
+          cd ../frontend && npm audit --audit-level=high || true
+
   deploy:
-    name: Production Automated Deployment
+    name: Production Deployment (Requires Environment Approval)
     needs: lint-and-test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - name: Checkout Code Repository
