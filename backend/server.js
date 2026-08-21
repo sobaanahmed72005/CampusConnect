@@ -125,20 +125,54 @@ app.use((req, res) => res.status(404).json({
   }
 }))
 
-// Structured Global Error Handler with Observability Tracing
+// Classified Error Category Resolver
+function classifyError(err, statusCode) {
+  if (err.code === 'EBADCSRFTOKEN' || err.message?.includes('CSRF')) return 'CSRF_FAILURE'
+  if (statusCode === 400) return 'VALIDATION_ERROR'
+  if (statusCode === 401) return 'AUTHENTICATION_ERROR'
+  if (statusCode === 403) return 'AUTHORIZATION_ERROR'
+  if (statusCode === 404) return 'NOT_FOUND'
+  if (statusCode === 409) return 'CONFLICT'
+  if (statusCode === 429) return 'RATE_LIMITED'
+  
+  // Check if error is a raw PostgreSQL database error
+  if (err.severity || err.routine || (typeof err.code === 'string' && err.code.length === 5)) {
+    return 'DATABASE_ERROR'
+  }
+  
+  return 'INTERNAL_ERROR'
+}
+
+// Structured Global Error Handler with Classification & Database Error Sanitization
 app.use((err, req, res, next) => {
-  const statusCode = err.status || 500
-  const errorResponse = {
+  const statusCode = err.status || err.statusCode || 500
+  const classification = err.classification || classifyError(err, statusCode)
+
+  // Server-side detailed logging for operational debugging & audit trail
+  console.error(`❌ [${req.id}] ${req.method} ${req.url} - Code: ${classification} (HTTP ${statusCode}):`, {
+    message: err.message,
+    code: err.code,
+    detail: err.detail || null,
+    stack: process.env.NODE_ENV === 'production' ? '[Redacted in Prod]' : err.stack
+  })
+
+  // Client-facing response payload (Strictly sanitizes raw internal DB / stack details)
+  let safeMessage = err.message || 'An unexpected error occurred.'
+  if (classification === 'DATABASE_ERROR') {
+    safeMessage = 'A database operation error occurred. Please contact system support with your Reference ID.'
+  } else if (statusCode === 500 && process.env.NODE_ENV === 'production') {
+    safeMessage = 'An internal system error occurred. Please try again later.'
+  }
+
+  res.status(statusCode).json({
     success: false,
     error: {
-      code: err.code || 'INTERNAL_SERVER_ERROR',
-      message: err.message || 'Internal server error',
+      code: classification,
+      message: safeMessage,
       requestId: req.id,
       timestamp: new Date().toISOString()
     }
-  }
-  console.error(`❌ [${req.id}] ${req.method} ${req.url} - Error ${statusCode}:`, err.stack || err.message)
-  res.status(statusCode).json(errorResponse)
+  })
 })
 
 const { applyDatabaseInvariants } = require('./config/schemaInvariants')
