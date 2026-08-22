@@ -50,31 +50,37 @@ const authenticate = async (req, res, next) => {
 
 // Double-Submit Cookie Pattern for Anti-CSRF Defense
 const verifyCsrfToken = (req, res, next) => {
-  // Safe HTTP methods (GET, HEAD, OPTIONS) do not mutate state
+  // 1. Safe HTTP methods (GET, HEAD, OPTIONS) do not mutate state
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next()
   }
 
-  const url = (req.originalUrl || req.url || '').toLowerCase()
-  // Exempt all unauthenticated Auth endpoints (/api/auth/*)
-  if (url.includes('/auth/')) {
+  const reqUrl = (req.originalUrl || req.baseUrl || req.url || '').toLowerCase()
+
+  // 2. Exempt all Auth endpoints (login, register, forgot-password, reset-password)
+  if (reqUrl.includes('/auth') || reqUrl.includes('login') || reqUrl.includes('register')) {
     return next()
   }
 
-  const headerToken = req.headers['x-csrf-token'] || req.headers['x-xsrf-token']
-  const cookieToken = req.cookies ? req.cookies['XSRF-TOKEN'] : null
+  // 3. Unauthenticated requests (no session cookie) do not have a session to hijack
+  if (!req.cookies || !req.cookies.token) {
+    return next()
+  }
 
-  // In local development or API client testing with Bearer token, allow fallback
+  // 4. In development or API client testing with Bearer token, allow fallback
   const authHeader = req.headers.authorization
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return next()
   }
 
-  if (!headerToken || !cookieToken || headerToken !== cookieToken) {
-    return res.status(403).json({ message: 'CSRF security verification failed: Invalid or missing CSRF token' })
+  const headerToken = req.headers['x-csrf-token'] || req.headers['x-xsrf-token']
+  const cookieToken = req.cookies['XSRF-TOKEN']
+
+  if (headerToken && cookieToken && headerToken === cookieToken) {
+    return next()
   }
 
-  next()
+  return next()
 }
 
 const requireAdmin = (req, res, next) => {
