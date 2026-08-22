@@ -55,6 +55,11 @@ const verifyCsrfToken = (req, res, next) => {
     return next()
   }
 
+  // Exempt unauthenticated Auth endpoints (register, login, forgot/reset password)
+  if (req.path.startsWith('/api/auth/register') || req.path.startsWith('/api/auth/login') || req.path.startsWith('/api/auth/forgot-password') || req.path.startsWith('/api/auth/reset-password') || req.path.startsWith('/auth/register') || req.path.startsWith('/auth/login')) {
+    return next()
+  }
+
   const headerToken = req.headers['x-csrf-token'] || req.headers['x-xsrf-token']
   const cookieToken = req.cookies ? req.cookies['XSRF-TOKEN'] : null
 
