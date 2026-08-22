@@ -15,7 +15,7 @@ const studentNav = [
   { to: '/marketplace', icon: ShoppingBag, label: 'Marketplace' },
   { to: '/lost-found', icon: Search, label: 'Lost & Found' },
   { to: '/accommodation', icon: Building2, label: 'Accommodation' },
-  { to: '/notifications', icon: Bell, label: 'Notifications' },
+  { to: '/notifications', icon: Megaphone, label: 'Announcements & Discussions' },
   { to: '/profile', icon: User, label: 'My Profile' },
 ]
 

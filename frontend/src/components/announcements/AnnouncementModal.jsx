@@ -4,17 +4,20 @@ import api from '../../lib/api'
 import toast from 'react-hot-toast'
 
 const CATEGORIES = [
-  { label: '🔔 Academic / Exam Schedule', value: 'exam' },
-  { label: '📢 Event / Career Fair', value: 'event' },
-  { label: '⚠️ Alert / Library Notice', value: 'alert' },
-  { label: '🏆 Contest / Hackathon', value: 'contest' },
-  { label: '📣 General Campus Notice', value: 'general' }
+  { label: '🚨 Urgent Alert', value: '🚨 Urgent Alert' },
+  { label: '📢 Official Announcement', value: '📢 Official Announcement' },
+  { label: '🎓 Society Announcement', value: '🎓 Society Announcement' },
+  { label: '🎉 Event Announcement', value: '🎉 Event Announcement' },
+  { label: '📅 Event Update', value: '📅 Event Update' },
+  { label: '🔔 General Update', value: '🔔 General Update' },
+  { label: '💬 Community Notice', value: '💬 Community Notice' },
+  { label: '🗣️ Rumours', value: '🗣️ Rumours' }
 ]
 
 export default function AnnouncementModal({ onClose, onSuccess }) {
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
-  const [category, setCategory] = useState('general')
+  const [category, setCategory] = useState('🔔 General Update')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
