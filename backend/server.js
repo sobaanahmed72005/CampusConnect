@@ -222,7 +222,11 @@ const PORT = process.env.PORT || 5000
 const server = app.listen(PORT, () => {
   console.log(`🚀 CampusConnect Backend running on http://localhost:${PORT}`)
   console.log(`📦 Environment: ${process.env.NODE_ENV}`)
-  applyDatabaseInvariants()
+  try {
+    applyDatabaseInvariants()
+  } catch (err) {
+    console.error('⚠️ Database invariants deferred:', err.message)
+  }
 })
 
 const io = initSocket(server)
