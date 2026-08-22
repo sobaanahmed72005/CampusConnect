@@ -13,7 +13,7 @@ import EmptyState from '../components/ui/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
 import './Events.css'
 
-const CATEGORIES = ['All', 'Tech', 'Sports', 'Cultural', 'Workshops', 'Seminars', 'Competitions', 'Social', 'Clubs & Societies']
+const CATEGORIES = ['All', 'Tech', 'Sports', 'Cultural', 'Workshops', 'Seminars', 'Competitions', 'Career & Placement', 'Campus Activities', 'Clubs & Societies']
 
 const CLUBS = [
   { id: 1, name: 'ACM Student Chapter', category: 'Tech & Coding', members: 420, lead: 'Hamza Malik', desc: 'Annual Hackathons, Competitive Programming, AI Workshops' },
@@ -118,10 +118,13 @@ export default function Events() {
       {/* Campus Community Sub-Tabs */}
       <div className="tabs mb-6">
         <button className={`tab ${activeTab === 'events' ? 'active' : ''}`} onClick={() => setActiveTab('events')}>
-          <Calendar size={15} /> Campus Events Feed
+          <Calendar size={15} /> Upcoming Events
         </button>
         <button className={`tab ${activeTab === 'clubs' ? 'active' : ''}`} onClick={() => setActiveTab('clubs')}>
           <Users size={15} /> Clubs & Societies Directory
+        </button>
+        <button className={`tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
+          <Award size={15} /> Past Event History
         </button>
       </div>
 
