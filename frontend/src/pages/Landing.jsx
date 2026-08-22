@@ -1,20 +1,28 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { BookOpen, Calendar, ShoppingBag, Search, Building2, ArrowRight, Users, Star, Zap, ChevronRight } from 'lucide-react'
+import { BookOpen, Calendar, ShoppingBag, Search, Building2, ArrowRight, Users, Star, Zap, ChevronRight, ShieldCheck, CheckCircle2, Award, GraduationCap, Lock } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import './Landing.css'
 
 const features = [
-  { icon: Calendar, label: 'Events', desc: 'Discover and register for campus events, workshops & sports', color: '#10b981', to: '/events' },
-  { icon: ShoppingBag, label: 'Marketplace', desc: 'Buy & sell books, electronics, furniture and notes', color: '#6366f1', to: '/marketplace' },
-  { icon: Search, label: 'Lost & Found', desc: 'Post lost items and help reunite students with belongings', color: '#f59e0b', to: '/lost-found' },
-  { icon: Building2, label: 'Accommodation', desc: 'Browse hostel rooms with prices, facilities and availability', color: '#3b82f6', to: '/accommodation' },
+  { icon: Calendar, label: 'Campus Events & Workshops', desc: 'Discover society workshops, hackathons, ACM ProCom & sports tournaments across FAST campuses', color: '#10b981', to: '/events' },
+  { icon: ShoppingBag, label: 'Verified Student Marketplace', desc: 'Buy & sell textbooks, laptops, lab gear and notes securely with verified @nu.edu.pk peers', color: '#6366f1', to: '/marketplace' },
+  { icon: Search, label: 'Lost & Found Radar', desc: 'Post lost items on campus and get AI-powered fuzzy match notifications automatically', color: '#f59e0b', to: '/lost-found' },
+  { icon: Building2, label: 'Student Housing & Hostels', desc: 'Browse verified student hostels near campus with walking distance maps, rent filters and amenities', color: '#3b82f6', to: '/accommodation' },
+]
+
+const campuses = [
+  { code: 'CFD', name: 'Chiniot-Faisalabad', count: '3,200+ Students' },
+  { code: 'LHR', name: 'Lahore Campus', count: '4,500+ Students' },
+  { code: 'ISB', name: 'Islamabad Campus', count: '3,800+ Students' },
+  { code: 'KHI', name: 'Karachi Campus', count: '2,900+ Students' },
+  { code: 'PWR', name: 'Peshawar Campus', count: '1,800+ Students' },
 ]
 
 const stats = [
-  { value: '12,000+', label: 'Students', icon: Users },
+  { value: '16,000+', label: 'FASTians Connected', icon: Users },
   { value: '340+', label: 'Events This Semester', icon: Calendar },
-  { value: '1,800+', label: 'Marketplace Listings', icon: ShoppingBag },
-  { value: '4.9★', label: 'Student Rating', icon: Star },
+  { value: '2,400+', label: 'Marketplace Trades', icon: ShoppingBag },
+  { value: '4.9★', label: 'FAST Student Rating', icon: Star },
 ]
 
 export default function Landing() {
@@ -28,13 +36,18 @@ export default function Landing() {
         <div className="landing-nav-inner">
           <Link to="/" className="landing-logo" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
             <div className="landing-logo-icon" style={{ background: '#fff', padding: '2px', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/logo.png" alt="University Logo" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              <img src="/logo.png" alt="FAST NUCES Logo" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             </div>
-            <span>CampusConnect</span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontWeight: 800, fontSize: '1.05rem', lineHeight: 1 }}>CampusConnect</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 700, letterSpacing: '0.05em' }}>FAST NUCES</span>
+            </div>
           </Link>
           <div className="landing-nav-links">
             <a href="#features">Features</a>
-            <a href="#stats">About</a>
+            <a href="#campuses">Campuses</a>
+            <a href="#trust">Trust & Safety</a>
+            <a href="#about">About</a>
           </div>
           <div className="landing-nav-actions">
             {user ? (
@@ -57,27 +70,61 @@ export default function Landing() {
           <div className="hero-orb orb1" /><div className="hero-orb orb2" /><div className="hero-orb orb3" />
         </div>
         <div className="hero-content animate-slide-up">
-          <div className="hero-badge"><Zap size={12} /> All-in-one student platform</div>
+          <div className="hero-badge" style={{ background: 'rgba(16, 185, 129, 0.12)', color: 'var(--primary)', border: '1px solid var(--border-primary)' }}>
+            <GraduationCap size={14} /> Official FAST NUCES Student Ecosystem
+          </div>
           <h1 className="hero-title">
-            Your Campus Life,<br />
-            <span className="hero-gradient">Simplified</span>
+            Empowering FASTians<br />
+            <span className="hero-gradient">Across All Campuses</span>
           </h1>
           <p className="hero-desc">
-            Manage events, buy & sell on the marketplace, track lost items, find accommodation — everything from one beautiful dashboard.
+            The unified digital platform for FAST NUCES students (CFD, LHR, ISB, KHI, PWR). Trade textbooks, find hostels near campus, track lost items, check class schedules, and join society workshops with verified <strong>@nu.edu.pk</strong> access.
           </p>
           <div className="hero-actions">
             {user ? (
               <button className="btn btn-primary btn-lg" onClick={() => navigate('/dashboard')}>
-                Open Dashboard <ArrowRight size={18} />
+                Open Student Dashboard <ArrowRight size={18} />
               </button>
             ) : (
               <>
                 <Link to="/register" className="btn btn-primary btn-lg">
-                  Get Started Free <ArrowRight size={18} />
+                  Join FAST Community <ArrowRight size={18} />
                 </Link>
                 <Link to="/login" className="btn btn-outline btn-lg">Sign In</Link>
               </>
             )}
+          </div>
+
+          {/* Institutional Trust Indicators */}
+          <div className="flex items-center justify-center gap-6 flex-wrap mt-8 pt-6 border-t" style={{ borderColor: 'rgba(148, 163, 184, 0.15)' }}>
+            <span className="flex items-center gap-1.5 text-xs text-muted font-semibold">
+              <Lock size={13} className="text-primary" /> @nu.edu.pk Email Verified
+            </span>
+            <span className="flex items-center gap-1.5 text-xs text-muted font-semibold">
+              <ShieldCheck size={13} className="text-accent" /> 100% Student-to-Student Trading
+            </span>
+            <span className="flex items-center gap-1.5 text-xs text-muted font-semibold">
+              <Award size={13} className="text-warning" /> ACM & IEEE Society Events
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Campuses Section */}
+      <section className="py-12 border-y" id="campuses" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+        <div className="landing-container">
+          <div className="text-center mb-8">
+            <span className="badge badge-accent mb-2">5 Campuses United</span>
+            <h2 className="text-h2 font-extrabold">Connecting FASTians Nationwide</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {campuses.map(c => (
+              <div key={c.code} className="card p-4 text-center hover:border-primary transition-all cursor-default" style={{ background: 'var(--bg-card)' }}>
+                <span className="badge badge-primary font-bold text-xs mb-2">{c.code}</span>
+                <div className="font-bold text-sm text-primary">{c.name}</div>
+                <div className="text-xs text-muted mt-1">{c.count}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

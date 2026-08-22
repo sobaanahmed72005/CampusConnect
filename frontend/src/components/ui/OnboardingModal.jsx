@@ -39,7 +39,7 @@ export default function OnboardingModal({ onClose }) {
             <span className="badge badge-primary flex items-center gap-1">
               <Sparkles size={12} /> Welcome Guide
             </span>
-            <span className="text-xs text-muted font-semibold">Campus Management Platform</span>
+            <span className="text-xs text-muted font-semibold">FAST NUCES Student Ecosystem</span>
           </div>
           <button className="btn btn-ghost btn-icon" onClick={handleComplete} aria-label="Close welcome guide">
             <X size={18} />
@@ -48,10 +48,10 @@ export default function OnboardingModal({ onClose }) {
 
         <div className="mb-6">
           <h2 id="onboarding-title" style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '6px' }}>
-            Welcome to CampusConnect 👋
+            Welcome to CampusConnect 🎓
           </h2>
           <p className="text-body-sm text-muted">
-            Your all-in-one digital hub for National University student life. Here's a quick 10-second tour of what you can do:
+            The official digital hub for FAST NUCES students (CFD, LHR, ISB, KHI, PWR). Here is your 10-second quick guide to campus life:
           </p>
         </div>
 

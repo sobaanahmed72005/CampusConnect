@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { Eye, EyeOff, UserPlus } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const departments = ['Computer Science','Electrical Engineering','Mechanical Engineering','Business Administration','Medicine','Law','Architecture','Arts & Design','Mathematics','Physics']
+const departments = ['Computer Science', 'Software Engineering', 'Artificial Intelligence', 'Data Science', 'Cyber Security', 'Electrical Engineering', 'Business Administration', 'Accounting & Finance']
 
 export default function Register() {
   const { register } = useAuth()
@@ -46,8 +46,9 @@ export default function Register() {
 
   return (
     <div>
-      <h2 style={{marginBottom:'8px'}}>Create your account</h2>
-      <p style={{fontSize:'0.875rem', marginBottom:'24px'}}>Join CampusConnect and manage your university life</p>
+      <div className="badge badge-primary mb-2">🎓 FAST NUCES Student Registration</div>
+      <h2 style={{marginBottom:'8px'}}>Create Your FASTian Account</h2>
+      <p style={{fontSize:'0.875rem', marginBottom:'24px'}}>Join 16,000+ FASTians across CFD, Lahore, Islamabad, Karachi & Peshawar</p>
 
       <form onSubmit={handleSubmit}>
         <div className="grid-2" style={{gap:'12px'}}>
