@@ -55,9 +55,9 @@ const verifyCsrfToken = (req, res, next) => {
     return next()
   }
 
-  const url = req.originalUrl || req.url || ''
-  // Exempt unauthenticated Auth endpoints (register, login, forgot/reset password)
-  if (url.includes('/auth/register') || url.includes('/auth/login') || url.includes('/auth/forgot-password') || url.includes('/auth/reset-password')) {
+  const url = (req.originalUrl || req.url || '').toLowerCase()
+  // Exempt all unauthenticated Auth endpoints (/api/auth/*)
+  if (url.includes('/auth/')) {
     return next()
   }
 
