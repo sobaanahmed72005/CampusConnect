@@ -5,6 +5,7 @@ const helmet = require('helmet')
 const morgan = require('morgan')
 const cookieParser = require('cookie-parser')
 const path = require('path')
+const fs = require('fs')
 const crypto = require('crypto')
 
 const { validateEnvironment } = require('./config/envValidation')
@@ -95,6 +96,18 @@ app.use('/api/announcements', require('./routes/announcements'))
 app.use('/api/admin', require('./routes/admin'))
 app.use('/api/search', require('./routes/search'))
 app.use('/api/messages', require('./routes/messages'))
+
+// Production Frontend Static SPA Asset Serving
+const frontendDistPath = path.join(__dirname, '../frontend/dist')
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath))
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next()
+    }
+    res.sendFile(path.join(frontendDistPath, 'index.html'))
+  })
+}
 
 // Health & Readiness Probes for Observability and Container Orchestration
 const { query: dbQuery } = require('./config/database')
