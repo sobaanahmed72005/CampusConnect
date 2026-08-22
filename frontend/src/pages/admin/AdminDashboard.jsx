@@ -114,6 +114,39 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {/* Institutional Role Governance & Multi-Campus Operations */}
+      <div className="card glass-card p-5 mb-6" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-strong)' }}>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div>
+            <h3 className="font-extrabold text-sm flex items-center gap-2">
+              <Shield className="text-primary" size={18} />
+              Institutional Role Governance Architecture
+            </h3>
+            <p className="text-xs text-muted">5-Tier Permission Hierarchy & Operations Matrix</p>
+          </div>
+          <span className="badge badge-primary text-xs font-bold">Multi-Campus Scope</span>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {[
+            { role: 'Super Admin', desc: 'System Config & Telemetry', badge: 'badge-danger', icon: '👑' },
+            { role: 'Campus Admin', desc: 'Campus Operations & Notices', badge: 'badge-primary', icon: '🏛️' },
+            { role: 'Moderator', desc: 'Marketplace & Content Review', badge: 'badge-warning', icon: '🛡️' },
+            { role: 'Society Admin', desc: 'Event Rosters & Workshops', badge: 'badge-accent', icon: '🎓' },
+            { role: 'Verified Student', desc: 'Peer Trading & Academics', badge: 'badge-success', icon: '👤' },
+          ].map(r => (
+            <div key={r.role} className="card p-3 text-center flex flex-col justify-between" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <div>
+                <div className="text-lg mb-1">{r.icon}</div>
+                <div className="font-bold text-xs">{r.role}</div>
+                <div className="text-muted text-xs mt-1" style={{ fontSize: '0.68rem' }}>{r.desc}</div>
+              </div>
+              <span className={`badge ${r.badge} text-xs mt-2`}>Active</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Charts & System Health */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-5)', marginBottom: 'var(--space-5)' }}>
         {/* SVG Activity Trend Chart */}
