@@ -81,10 +81,10 @@ export default function MarketplaceDetail() {
     if (!product) return
     setTogglingSold(true)
     try {
-      const updatedStatus = !product.is_sold
-      await api.put(`/marketplace/${product.id}`, { is_sold: updatedStatus })
+      const res = await api.patch(`/marketplace/${product.id}/sold`)
+      const updatedStatus = res.data.product?.is_sold
       setProduct(prev => ({ ...prev, is_sold: updatedStatus }))
-      toast.success(updatedStatus ? 'Item marked as Sold' : 'Item marked as Available')
+      toast.success(updatedStatus ? 'Item marked as Sold 🎉' : 'Item marked as Available')
     } catch {
       toast.error('Failed to update status')
     } finally {

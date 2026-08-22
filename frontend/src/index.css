@@ -207,6 +207,10 @@ a:hover { color: var(--primary-light); }
   transition: all var(--transition);
   white-space: nowrap;
   text-decoration: none;
+  user-select: none;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97) !important;
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary {
