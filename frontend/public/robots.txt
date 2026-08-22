@@ -12,4 +12,4 @@ Disallow: /profile/
 Disallow: /notifications/
 Disallow: /api/
 
-Sitemap: https://campusconnect.nu.edu.pk/sitemap.xml
+Sitemap: https://campusconnect.itnetwork.pk/sitemap.xml
