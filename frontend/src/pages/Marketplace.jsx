@@ -160,12 +160,11 @@ export default function Marketplace() {
 
   const handleToggleSold = async (productId) => {
     try {
-      const target = products.find(p => p.id === productId) || myListings.find(p => p.id === productId)
-      const updatedStatus = !target?.is_sold
-      await api.put(`/marketplace/${productId}`, { is_sold: updatedStatus })
-      toast.success(updatedStatus ? 'Marked as Sold' : 'Marked as Available')
-      if (activeTab === 'my_listings') fetchMyListings()
-      else fetchProducts()
+      const res = await api.patch(`/marketplace/${productId}/sold`)
+      const updatedStatus = res.data.product?.is_sold
+      toast.success(updatedStatus ? 'Marked as Sold 🎉' : 'Marked as Available')
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, is_sold: updatedStatus } : p))
+      setMyListings(prev => prev.map(p => p.id === productId ? { ...p, is_sold: updatedStatus } : p))
     } catch (err) {
       toast.error('Failed to update status')
     }

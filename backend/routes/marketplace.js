@@ -295,13 +295,22 @@ router.put('/:id', authenticate, uploadSingle('image'), async (req, res) => {
     }
 
     const { title, description, price, category, condition, location, is_sold } = req.body
-    const images = req.file ? [`/uploads/marketplace/${req.file.filename}`] : existing.rows[0].images
+    const current = existing.rows[0]
+    const updatedTitle = title !== undefined ? title : current.title
+    const updatedDesc = description !== undefined ? description : current.description
+    const updatedPrice = price !== undefined && !isNaN(parseFloat(price)) ? parseFloat(price) : current.price
+    const updatedCat = category !== undefined ? category : current.category
+    const updatedCond = condition !== undefined ? condition : current.condition
+    const updatedLoc = location !== undefined ? location : current.location
+    const updatedSold = is_sold !== undefined ? (is_sold === 'true' || is_sold === true) : current.is_sold
+    const images = req.file ? [`/uploads/marketplace/${req.file.filename}`] : current.images
+
     if (req.file) uploadedPath = req.file.path
 
     const result = await query(
       `UPDATE marketplace_listings SET title=$1,description=$2,price=$3,category=$4,condition=$5,images=$6,location=$7,is_sold=$8,updated_at=NOW()
        WHERE id=$9 RETURNING *`,
-      [title, description, parseFloat(price), category, condition, images, location || existing.rows[0].location, is_sold === 'true' || is_sold === true, id]
+      [updatedTitle, updatedDesc, updatedPrice, updatedCat, updatedCond, images, updatedLoc, updatedSold, id]
     )
     res.json({ product: result.rows[0] })
   } catch (err) {

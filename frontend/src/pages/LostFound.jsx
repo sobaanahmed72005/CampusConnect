@@ -154,12 +154,29 @@ export default function LostFound() {
                     <Sparkles size={13} /> Check Matches
                   </button>
 
-                  <button
-                    className="btn btn-outline btn-xs"
-                    onClick={() => setClaimItem(item)}
-                  >
-                    Claim Ownership
-                  </button>
+                  {item.user_id === user?.id && !item.is_resolved ? (
+                    <button
+                      className="btn btn-accent btn-xs"
+                      onClick={async () => {
+                        try {
+                          await api.patch(`/lost-found/${item.id}/resolve`)
+                          toast.success('Report resolved successfully! 🎉')
+                          fetchItems()
+                        } catch {
+                          toast.error('Failed to resolve report')
+                        }
+                      }}
+                    >
+                      <CheckSquare size={13} /> Resolve Report
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-outline btn-xs"
+                      onClick={() => setClaimItem(item)}
+                    >
+                      Claim Item
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
