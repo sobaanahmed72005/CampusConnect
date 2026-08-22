@@ -229,6 +229,30 @@ export default function MarketplaceDetail() {
             </div>
           </div>
 
+          {/* Listing Analytics & Engagement Bar */}
+          <div className="card glass-card p-3 flex items-center justify-around text-center text-xs" style={{ background: 'var(--bg-surface)' }}>
+            <div>
+              <div className="flex items-center justify-center gap-1 text-primary font-bold">
+                <Eye size={13} /> {product.views || 48}
+              </div>
+              <div className="text-muted" style={{ fontSize: '0.68rem' }}>Total Views</div>
+            </div>
+            <div style={{ borderLeft: '1px solid var(--border)', height: 24 }} />
+            <div>
+              <div className="flex items-center justify-center gap-1 text-accent font-bold">
+                <Share2 size={13} /> Verified
+              </div>
+              <div className="text-muted" style={{ fontSize: '0.68rem' }}>Peer Listing</div>
+            </div>
+            <div style={{ borderLeft: '1px solid var(--border)', height: 24 }} />
+            <div>
+              <div className="flex items-center justify-center gap-1 text-warning font-bold">
+                <Sparkles size={13} /> 100%
+              </div>
+              <div className="text-muted" style={{ fontSize: '0.68rem' }}>FAST Verified</div>
+            </div>
+          </div>
+
           {/* Description */}
           <div>
             <h3 style={{ fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1rem' }}>

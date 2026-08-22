@@ -228,9 +228,9 @@ export default function Marketplace() {
       <div className="tabs mb-6">
         <button
           className={`tab ${activeTab === 'all' ? 'active' : ''}`}
-          onClick={() => setActiveTab('all')}
+          onClick={() => { setActiveTab('all'); setStatus('available'); }}
         >
-          <ShoppingBag size={15} /> All Marketplace Listings
+          <ShoppingBag size={15} /> All Listings
         </button>
         <button
           className={`tab ${activeTab === 'saved' ? 'active' : ''}`}
@@ -243,6 +243,12 @@ export default function Marketplace() {
           onClick={() => setActiveTab('my_listings')}
         >
           <Package size={15} /> My Listings ({myListings.length})
+        </button>
+        <button
+          className={`tab ${activeTab === 'sold' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('sold'); setStatus('sold'); }}
+        >
+          <History size={15} /> Sold History
         </button>
       </div>
 
