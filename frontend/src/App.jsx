@@ -109,6 +109,7 @@ export default function App() {
                 <Route path="assignments" element={<Assignments />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="notifications" element={<Notifications />} />
+                <Route path="announcements-discussions" element={<Notifications />} />
               </Route>
 
               {/* Admin Routes */}
