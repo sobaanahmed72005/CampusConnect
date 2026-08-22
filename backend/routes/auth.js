@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+const crypto = require('crypto')
 const { body, validationResult } = require('express-validator')
 const { query } = require('../config/database')
 const { authenticate } = require('../middleware/auth')
@@ -171,8 +172,6 @@ async function ensureResetColumns() {
   } catch (e) {}
 }
 ensureResetColumns()
-
-const crypto = require('crypto')
 
 // POST /api/auth/forgot-password
 router.post('/forgot-password', forgotPasswordLimiter, [
