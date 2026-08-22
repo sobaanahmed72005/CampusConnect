@@ -119,6 +119,7 @@ const { query: dbQuery } = require('./config/database')
 app.get(['/api/health', '/api/health/live'], (req, res) => {
   res.json({
     status: 'ok',
+    version: '2.0.1-SSL-FIX',
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   })
