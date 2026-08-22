@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 const { query } = require('../config/database')
 
+const JWT_SECRET = process.env.JWT_SECRET || 'campusconnect_production_secure_fallback_jwt_secret_key_2026'
+
 const authenticate = async (req, res, next) => {
   try {
     let token = null
@@ -19,7 +21,7 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ message: 'Authentication required. No token provided.' })
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const decoded = jwt.verify(token, JWT_SECRET)
 
     // Explicitly select non-sensitive columns + session_version
     const result = await query(

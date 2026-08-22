@@ -165,7 +165,7 @@ router.post('/logout', (req, res) => {
 // POST /api/auth/logout-all (Revokes session_version across all active devices)
 router.post('/logout-all', authenticate, async (req, res) => {
   try {
-    await db.query(
+    await query(
       'UPDATE users SET session_version = session_version + 1 WHERE id = $1',
       [req.user.id]
     )
