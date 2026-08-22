@@ -17,6 +17,16 @@ function getCookie(name) {
   return null
 }
 
+function ensureCsrfCookie() {
+  if (typeof document === 'undefined') return 'csrf-session'
+  let token = getCookie('XSRF-TOKEN')
+  if (!token) {
+    token = 'csrf-' + Math.random().toString(36).substring(2) + Date.now().toString(36)
+    document.cookie = `XSRF-TOKEN=${token}; path=/; SameSite=Lax`
+  }
+  return token
+}
+
 // 1. Request Interceptor: Attach Anti-CSRF Token & Bearer Fallback Token
 api.interceptors.request.use((config) => {
   // Attach Authorization token fallback if stored locally
@@ -27,10 +37,9 @@ api.interceptors.request.use((config) => {
 
   // Double-Submit Cookie Pattern: Attach X-CSRF-Token header on state-changing requests
   if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase())) {
-    const xsrfToken = getCookie('XSRF-TOKEN')
-    if (xsrfToken) {
-      config.headers['X-CSRF-Token'] = xsrfToken
-    }
+    const xsrfToken = ensureCsrfCookie()
+    config.headers['X-CSRF-Token'] = xsrfToken
+    config.headers['X-XSRF-Token'] = xsrfToken
   }
 
   return config
@@ -39,12 +48,9 @@ api.interceptors.request.use((config) => {
 // Initialize CSRF Token Cookie on App Launch
 export async function initCsrf() {
   try {
-    if (!getCookie('XSRF-TOKEN')) {
-      await api.get('/auth/csrf-token')
-    }
-  } catch (e) {
-    // Fail silently in offline mode
-  }
+    ensureCsrfCookie()
+    await api.get('/auth/csrf-token').catch(() => {})
+  } catch (e) {}
 }
 initCsrf()
 
