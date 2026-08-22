@@ -62,9 +62,9 @@ router.post('/register', registerLimiter, [
     try {
       result = await query(
         `INSERT INTO users (first_name, last_name, email, password, password_hash, student_id, department, role, is_verified, verification_token)
-         VALUES ($1,$2,$3,$4,$4,$5,$6,'student', true, $7)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,'student', true, $8)
          RETURNING id, first_name, last_name, email, role, department, student_id, is_verified`,
-        [first_name, last_name, email, password_hash, student_id, department, verificationToken]
+        [first_name, last_name, email, password_hash, password_hash, student_id, department, verificationToken]
       )
     } catch (insertErr) {
       console.warn('⚠️ Primary insert query fallback triggered:', insertErr.message)
@@ -97,8 +97,9 @@ router.post('/register', registerLimiter, [
       verificationToken
     })
   } catch (err) {
-    console.error('Registration error:', err)
-    res.status(400).json({ message: err.message || 'Registration failed' })
+    const errMsg = err?.message || err?.detail || (typeof err === 'string' ? err : 'Registration failed')
+    console.error('Registration error details:', errMsg)
+    res.status(400).json({ message: errMsg })
   }
 })
 
@@ -144,8 +145,9 @@ router.post('/login', loginLimiter, [
 
     res.json({ token, user: safeUser })
   } catch (err) {
-    console.error('Login error:', err)
-    res.status(500).json({ message: err.message || 'Login failed' })
+    const errMsg = err?.message || err?.detail || (typeof err === 'string' ? err : 'Login failed')
+    console.error('Login error details:', errMsg)
+    res.status(500).json({ message: errMsg })
   }
 })
 
