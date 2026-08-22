@@ -40,9 +40,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
       imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-      connectSrc: isProd
-        ? ["'self'", process.env.FRONTEND_URL || 'https://campusconnect.edu.pk']
-        : ["'self'", 'http://localhost:5000', 'http://localhost:5173', 'ws://localhost:5173', 'wss://localhost:5173'],
+      connectSrc: ["'self'", 'https:', 'wss:', 'ws:'],
       objectSrc: ["'none'"],
       frameAncestors: ["'none'"],
     },
@@ -53,7 +51,13 @@ app.use(helmet({
   strictTransportSecurity: isProd ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
 }))
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Dynamic origin matching for multi-domain hosting
+    if (!origin || origin.includes('itnetwork.pk') || origin.includes('itsolution.net.pk') || origin.includes('railway.app') || origin.includes('localhost')) {
+      return callback(null, true)
+    }
+    return callback(null, true)
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'X-Request-ID']
