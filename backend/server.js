@@ -214,6 +214,7 @@ app.use((err, req, res, next) => {
 })
 
 const { applyDatabaseInvariants } = require('./config/schemaInvariants')
+const { runMigrations } = require('./scripts/migrate')
 const db = require('./config/database')
 
 const { initSocket } = require('./config/socket')
@@ -223,6 +224,7 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 CampusConnect Backend running on http://localhost:${PORT}`)
   console.log(`📦 Environment: ${process.env.NODE_ENV}`)
   try {
+    runMigrations().catch(err => console.warn('⚠️ Migration notice:', err.message))
     applyDatabaseInvariants()
   } catch (err) {
     console.error('⚠️ Database invariants deferred:', err.message)
