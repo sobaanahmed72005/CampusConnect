@@ -23,18 +23,33 @@ async function initTable() {
 }
 initTable()
 
+const cacheService = require('../services/cacheService')
+
 // GET /api/announcements (Public/Authenticated)
 router.get('/', authenticate, async (req, res) => {
   try {
+    const limit = parseInt(req.query.limit || '20')
+    const offset = parseInt(req.query.offset || '0')
+    const cacheKey = `announcements_feed_${limit}_${offset}`
+
+    const cached = cacheService.get(cacheKey)
+    if (cached) {
+      return res.json({ announcements: cached, cached: true })
+    }
+
     const result = await query(
-      'SELECT * FROM announcements ORDER BY created_at DESC LIMIT 20'
+      'SELECT * FROM announcements ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
     )
-    res.json({ announcements: result.rows })
+
+    cacheService.set(cacheKey, result.rows, 30) // Cache for 30 seconds
+    res.json({ announcements: result.rows, cached: false })
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: 'Failed to load announcements' })
   }
 })
+
 
 // POST /api/announcements (Admin Only — ACID Transactional Endpoint)
 router.post('/', authenticate, requireAdmin, async (req, res) => {
@@ -64,6 +79,10 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
     )
 
     await client.query('COMMIT')
+
+    // Invalidate announcement feed caches
+    cacheService.del('announcements_*')
+
 
     // Non-blocking in-process notification batching for active students
     setImmediate(async () => {

@@ -14,10 +14,13 @@ function validateEnvironment() {
   const isProd = process.env.NODE_ENV === 'production'
   const missing = []
 
-  for (const envVar of REQUIRED_ENV_VARS) {
-    if (!process.env[envVar]) {
-      missing.push(envVar)
-    }
+  if (!process.env.JWT_SECRET) missing.push('JWT_SECRET')
+  if (!process.env.FRONTEND_URL) missing.push('FRONTEND_URL')
+
+  const hasDbUrl = !!process.env.DATABASE_URL
+  const hasIndividualDb = process.env.DB_HOST && process.env.DB_NAME && process.env.DB_USER
+  if (!hasDbUrl && !hasIndividualDb) {
+    missing.push('DATABASE_URL (or DB_HOST, DB_NAME, DB_USER)')
   }
 
   if (isProd && missing.length > 0) {

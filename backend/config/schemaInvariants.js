@@ -79,6 +79,46 @@ async function applyDatabaseInvariants() {
         is_read BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS marketplace_favorites (
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        listing_id UUID REFERENCES marketplace_listings(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        PRIMARY KEY (user_id, listing_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS marketplace_reports (
+        id UUID PRIMARY KEY,
+        listing_id UUID REFERENCES marketplace_listings(id) ON DELETE CASCADE,
+        reporter_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        reason VARCHAR(50) NOT NULL,
+        details TEXT,
+        status VARCHAR(20) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS push_notifications_enabled BOOLEAN DEFAULT TRUE;
+
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id UUID PRIMARY KEY,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        endpoint TEXT NOT NULL,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        CONSTRAINT uq_user_endpoint UNIQUE (user_id, endpoint)
+      );
+
+      CREATE TABLE IF NOT EXISTS student_activity_telemetry (
+        id UUID PRIMARY KEY,
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        event_type VARCHAR(50) NOT NULL,
+        entity_type VARCHAR(50),
+        entity_id VARCHAR(100),
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT NOW()
+      );
     `).catch(() => {})
 
     // 7. High-Performance Database Query Indexes
@@ -95,7 +135,20 @@ async function applyDatabaseInvariants() {
       CREATE INDEX IF NOT EXISTS idx_conversations_buyer ON marketplace_conversations(buyer_id);
       CREATE INDEX IF NOT EXISTS idx_conversations_seller ON marketplace_conversations(seller_id);
       CREATE INDEX IF NOT EXISTS idx_messages_conversation ON marketplace_messages(conversation_id, created_at ASC);
+      CREATE INDEX IF NOT EXISTS idx_favorites_user ON marketplace_favorites(user_id);
+      CREATE INDEX IF NOT EXISTS idx_favorites_listing ON marketplace_favorites(listing_id);
+      CREATE INDEX IF NOT EXISTS idx_reports_listing ON marketplace_reports(listing_id);
+      CREATE INDEX IF NOT EXISTS idx_reports_status ON marketplace_reports(status);
+      CREATE INDEX IF NOT EXISTS idx_push_sub_user ON push_subscriptions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_telemetry_event ON student_activity_telemetry(event_type);
+      CREATE INDEX IF NOT EXISTS idx_telemetry_user ON student_activity_telemetry(user_id);
+      CREATE INDEX IF NOT EXISTS idx_telemetry_created ON student_activity_telemetry(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_marketplace_cat_created ON marketplace_listings(category, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_events_cat_date ON events(category, date DESC);
+      CREATE INDEX IF NOT EXISTS idx_telemetry_created_user ON student_activity_telemetry(created_at DESC, user_id);
     `).catch(() => {})
+
+
 
     console.log('🔒 PostgreSQL Database Schema Invariants, Constraints & Query Indexes Active')
   } catch (err) {

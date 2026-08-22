@@ -95,7 +95,7 @@ router.post('/login', loginLimiter, [
     if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid email or password' })
 
     const user = result.rows[0]
-    const valid = await bcrypt.compare(password, user.password)
+    const valid = user.password ? await bcrypt.compare(password, user.password) : false
     if (!valid) return res.status(401).json({ message: 'Invalid email or password' })
 
     const token = signToken(user.id)

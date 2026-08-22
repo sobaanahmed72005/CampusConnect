@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../lib/api'
-import { Calendar as CalendarIcon, Clock, MapPin, User, Plus, Trash2, X, Sparkles } from 'lucide-react'
+import { Calendar as CalendarIcon, Clock, MapPin, User, Plus, Trash2, X, Sparkles, GraduationCap, CheckSquare, BarChart3, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import PageHeader from '../components/ui/PageHeader'
 import LoadingGrid from '../components/ui/LoadingGrid'
@@ -21,6 +22,12 @@ export default function Timetable() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selectedDay, setSelectedDay] = useState(1) // Monday by default
+  const [courseName, setCourseName] = useState('')
+  const [room, setRoom] = useState('')
+  const [instructor, setInstructor] = useState('')
+  const [startTime, setStartTime] = useState('09:00')
+  const [endTime, setEndTime] = useState('10:30')
+  const [dayOfWeek, setDayOfWeek] = useState(1)
 
   useEffect(() => { fetchTimetable() }, [])
 
@@ -30,6 +37,29 @@ export default function Timetable() {
       const res = await api.get('/academic/timetable')
       setTimetable(res.data.timetable || [])
     } catch { setTimetable([]) } finally { setLoading(false) }
+  }
+
+  const handleAddSlot = async (e) => {
+    e.preventDefault()
+    if (!courseName.trim()) return
+    try {
+      const res = await api.post('/academic/timetable', {
+        course_name: courseName,
+        room_number: room,
+        instructor_name: instructor,
+        start_time: startTime,
+        end_time: endTime,
+        day_of_week: Number(dayOfWeek)
+      })
+      setTimetable(prev => [...prev, res.data.slot || res.data.item])
+      toast.success('Class slot added to schedule!')
+      setShowForm(false)
+      setCourseName('')
+      setRoom('')
+      setInstructor('')
+    } catch {
+      toast.error('Failed to add class slot')
+    }
   }
 
   const deleteSlot = async (id) => {
@@ -50,35 +80,58 @@ export default function Timetable() {
         subtitle="Manage your weekly lecture schedule, room locations, and course instructors"
         iconColor="var(--primary)"
         action={
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-            <Plus size={16} /> Add Class Slot
-          </button>
+          <div className="flex items-center gap-2">
+            <Link to="/academics" className="btn btn-outline btn-sm">
+              <ArrowLeft size={14} /> Back to Academics Hub
+            </Link>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
+              <Plus size={14} /> Add Class Slot
+            </button>
+          </div>
         }
       />
 
-      {/* Day Tabs Selector */}
+      {/* Subsystem Navigation Tabs with Academics Hub direct link */}
       <div className="tabs mb-6">
-        {DAYS.map(d => {
-          const count = getDayClasses(d.id).length
+        <Link to="/academics" className="tab">
+          <GraduationCap size={15} /> Academics Hub
+        </Link>
+        <button className="tab active">
+          <CalendarIcon size={15} /> Weekly Timetable
+        </button>
+        <Link to="/assignments" className="tab">
+          <CheckSquare size={15} /> Assignments & Deadlines
+        </Link>
+        <Link to="/attendance" className="tab">
+          <BarChart3 size={15} /> Attendance Tracker
+        </Link>
+      </div>
+
+      {/* Day Tabs Selector */}
+      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+        {DAYS.map(day => {
+          const count = getDayClasses(day.id).length
           return (
             <button
-              key={d.id}
-              className={`tab ${selectedDay === d.id ? 'active' : ''}`}
-              onClick={() => setSelectedDay(d.id)}
+              key={day.id}
+              onClick={() => setSelectedDay(day.id)}
+              className={`btn ${selectedDay === day.id ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ borderRadius: 'var(--radius-full)', padding: '8px 18px', fontSize: '0.85rem' }}
             >
-              {d.name} ({count})
+              {day.name}
+              {count > 0 && <span className="badge badge-accent text-xs ml-1.5">{count}</span>}
             </button>
           )
         })}
       </div>
 
       {loading ? (
-        <LoadingGrid count={4} height="180px" gridClass="grid-2" />
+        <LoadingGrid count={3} height="140px" label="Loading class schedule..." />
       ) : getDayClasses(selectedDay).length === 0 ? (
         <EmptyState
           icon={CalendarIcon}
           title={`No classes scheduled for ${DAYS.find(d => d.id === selectedDay)?.name}`}
-          description="Enjoy your free time or add a new lecture slot to your schedule!"
+          description="Enjoy your free time or add a new lecture slot to your timetable!"
           action={
             <button className="btn btn-primary" onClick={() => setShowForm(true)}>
               <Plus size={16} /> Add Class Slot
@@ -86,133 +139,102 @@ export default function Timetable() {
           }
         />
       ) : (
-        <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
-          {getDayClasses(selectedDay).map(item => (
-            <div
-              key={item.id}
-              className="card card-hover"
-              style={{
-                padding: 'var(--space-4)',
-                borderLeft: `5px solid ${item.color || 'var(--primary)'}`,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px'
-              }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="badge badge-muted text-xs flex items-center gap-1">
-                  <Clock size={11} /> {item.start_time?.slice(0, 5)} - {item.end_time?.slice(0, 5)}
-                </span>
-                <button
-                  className="btn btn-ghost btn-icon btn-sm"
-                  onClick={() => deleteSlot(item.id)}
-                  style={{ color: 'var(--danger)', padding: 4 }}
-                  title="Delete slot"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
+        <div className="grid-2 gap-4">
+          {getDayClasses(selectedDay).map((slot, index) => {
+            const color = COLORS[index % COLORS.length]
+            return (
+              <div key={slot.id} className="card glass-card p-4 flex flex-col justify-between" style={{ borderLeft: `4px solid ${color}`, background: 'var(--bg-surface)' }}>
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <h4 className="font-bold text-base truncate">{slot.course_name}</h4>
+                    <span className="badge badge-primary text-xs flex items-center gap-1 font-semibold">
+                      <Clock size={12} /> {slot.start_time} - {slot.end_time}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted flex items-center gap-4 mt-2 flex-wrap">
+                    {slot.room_number && (
+                      <span className="flex items-center gap-1"><MapPin size={13} className="text-primary" /> Room: {slot.room_number}</span>
+                    )}
+                    {slot.instructor_name && (
+                      <span className="flex items-center gap-1"><User size={13} className="text-accent" /> Instructor: {slot.instructor_name}</span>
+                    )}
+                  </div>
+                </div>
 
-              <h4 style={{ fontSize: '1.05rem', fontWeight: 700 }}>{item.subject}</h4>
-
-              <div className="flex items-center gap-4 text-xs text-muted mt-1 flex-wrap">
-                {item.room && (
-                  <span className="flex items-center gap-1"><MapPin size={12} style={{ color: 'var(--primary)' }} /> Room: <strong>{item.room}</strong></span>
-                )}
-                {item.instructor && (
-                  <span className="flex items-center gap-1"><User size={12} /> Instructor: <strong>{item.instructor}</strong></span>
-                )}
+                <div className="flex justify-end pt-3 border-t mt-4" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <button className="btn btn-ghost btn-icon btn-sm text-danger" onClick={() => deleteSlot(slot.id)} title="Remove class slot">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
-      {showForm && <TimetableForm onClose={() => setShowForm(false)} onSuccess={() => { setShowForm(false); fetchTimetable() }} defaultDay={selectedDay} />}
-    </div>
-  )
-}
-
-function TimetableForm({ onClose, onSuccess, defaultDay }) {
-  const [form, setForm] = useState({
-    subject: '', instructor: '', room: '', day_of_week: defaultDay || 1, start_time: '09:00', end_time: '10:30', color: '#10b981'
-  })
-  const [loading, setLoading] = useState(false)
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!form.subject.trim()) return toast.error('Subject is required')
-    setLoading(true)
-    try {
-      await api.post('/academic/timetable', form)
-      toast.success('Class slot added to schedule!')
-      onSuccess()
-    } catch { toast.error('Failed to add class') } finally { setLoading(false) }
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px' }}>
-        <div className="modal-header">
-          <h3>Add Class to Schedule</h3>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18} /></button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Subject / Course Title *</label>
-            <input className="form-input" placeholder="e.g. Data Structures & Algorithms" value={form.subject} onChange={e => set('subject', e.target.value)} required />
-          </div>
-          <div className="grid-2" style={{ gap: '12px' }}>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Day of Week</label>
-              <select className="form-input form-select" value={form.day_of_week} onChange={e => set('day_of_week', parseInt(e.target.value))}>
-                {DAYS.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Room / Lab</label>
-              <input className="form-input" placeholder="e.g. CS-101" value={form.room} onChange={e => set('room', e.target.value)} />
-            </div>
-          </div>
-          <div className="grid-2" style={{ gap: '12px', marginTop: '12px' }}>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Start Time</label>
-              <input className="form-input" type="time" value={form.start_time} onChange={e => set('start_time', e.target.value)} />
-            </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">End Time</label>
-              <input className="form-input" type="time" value={form.end_time} onChange={e => set('end_time', e.target.value)} />
-            </div>
-          </div>
-          <div className="form-group mt-2">
-            <label className="form-label">Instructor Name</label>
-            <input className="form-input" placeholder="e.g. Dr. Alan Turing" value={form.instructor} onChange={e => set('instructor', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Card Accent Color</label>
-            <div className="flex gap-2">
-              {COLORS.map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => set('color', c)}
-                  style={{
-                    width: 28, height: 28, borderRadius: '50%', background: c, border: form.color === c ? '2px solid white' : 'none',
-                    cursor: 'pointer', outline: form.color === c ? `2px solid ${c}` : 'none'
-                  }}
+      {/* Add Slot Modal */}
+      {showForm && (
+        <div className="modal-overlay animate-fade" onClick={() => setShowForm(false)}>
+          <div className="modal glass-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px', padding: 'var(--space-6)' }}>
+            <h3 className="font-bold text-base mb-4">Add Timetable Class Slot</h3>
+            <form onSubmit={handleAddSlot} className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-semibold mb-1 block">Course Name</label>
+                <input
+                  type="text"
+                  className="form-input text-xs"
+                  placeholder="e.g. CS402 Operating Systems"
+                  value={courseName}
+                  onChange={e => setCourseName(e.target.value)}
+                  required
                 />
-              ))}
-            </div>
+              </div>
+              <div className="grid-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold mb-1 block">Day of Week</label>
+                  <select className="form-select text-xs" value={dayOfWeek} onChange={e => setDayOfWeek(Number(e.target.value))}>
+                    {DAYS.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold mb-1 block">Room Number</label>
+                  <input
+                    type="text"
+                    className="form-input text-xs"
+                    placeholder="e.g. CS-Lab 3"
+                    value={room}
+                    onChange={e => setRoom(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="grid-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold mb-1 block">Start Time</label>
+                  <input type="time" className="form-input text-xs" value={startTime} onChange={e => setStartTime(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold mb-1 block">End Time</label>
+                  <input type="time" className="form-input text-xs" value={endTime} onChange={e => setEndTime(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold mb-1 block">Instructor Name</label>
+                <input
+                  type="text"
+                  className="form-input text-xs"
+                  placeholder="e.g. Dr. Ahmed Khan"
+                  value={instructor}
+                  onChange={e => setInstructor(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end gap-2 mt-2">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary btn-sm">Add Slot</button>
+              </div>
+            </form>
           </div>
-          <div className="flex gap-3 mt-6">
-            <button type="button" className="btn btn-outline flex-1" onClick={onClose}>Cancel</button>
-            <button type="submit" className={`btn btn-primary flex-1 ${loading ? 'btn-loading' : ''}`} disabled={loading}>
-              {loading ? <div className="spinner" /> : 'Save Class Slot'}
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+      )}
     </div>
   )
 }

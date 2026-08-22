@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Menu, Search, Bell, ChevronDown, User, LogOut, CheckCheck, ShoppingBag, Calendar, Building2, Search as SearchIcon, Loader2, Shield } from 'lucide-react'
+import { Menu, Search, Bell, ChevronDown, User, LogOut, CheckCheck, ShoppingBag, Calendar, Building2, Search as SearchIcon, Loader2, Shield, MessageSquare } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../lib/api'
 import toast from 'react-hot-toast'
 import { useDebounce } from '../../hooks/useDebounce'
 import CommandPalette from '../ui/CommandPalette'
+import MessagingDrawer from '../messaging/MessagingDrawer'
 import './Header.css'
 
 export default function Header({ onMenuClick }) {
@@ -18,10 +19,12 @@ export default function Header({ onMenuClick }) {
   const [searching, setSearching] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false)
+  const [messagingOpen, setMessagingOpen] = useState(false)
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false)
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
+
 
   const searchRef = useRef(null)
   const inputRef = useRef(null)
@@ -283,8 +286,19 @@ export default function Header({ onMenuClick }) {
       </div>
 
       <div className="header-actions">
+        {/* Real-Time Marketplace Messages Trigger */}
+        <button
+          className="btn btn-ghost btn-icon"
+          onClick={() => { setMessagingOpen(true); setNotifDropdownOpen(false); setUserDropdownOpen(false) }}
+          aria-label="Marketplace Messages"
+          title="Marketplace Messages"
+        >
+          <MessageSquare size={18} style={{ color: 'var(--accent)' }} />
+        </button>
+
         {/* Notification Bell Dropdown */}
         <div className="header-dropdown-wrapper">
+
           <button
             className="btn btn-ghost btn-icon header-notif-btn"
             onClick={() => { setNotifDropdownOpen(o => !o); setUserDropdownOpen(false) }}
@@ -377,9 +391,15 @@ export default function Header({ onMenuClick }) {
         isOpen={cmdPaletteOpen}
         onClose={() => setCmdPaletteOpen(false)}
       />
+
+      <MessagingDrawer
+        isOpen={messagingOpen}
+        onClose={() => setMessagingOpen(false)}
+      />
     </header>
   )
 }
+
 
 function getNotifIcon(type) {
   switch (type) {

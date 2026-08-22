@@ -90,8 +90,14 @@ router.get('/', async (req, res) => {
 // GET /api/lost-found/:id/matches (Automated Match Detection Engine)
 router.get('/:id/matches', async (req, res) => {
   try {
-    const targetRes = await query('SELECT * FROM lost_found_reports WHERE id = $1', [req.params.id])
-    if (targetRes.rows.length === 0) return res.status(404).json({ message: 'Target report not found' })
+    let targetRes
+    try {
+      targetRes = await query('SELECT * FROM lost_found_reports WHERE id = $1', [req.params.id])
+    } catch {
+      return res.json({ matches: [] })
+    }
+
+    if (!targetRes || targetRes.rows.length === 0) return res.json({ matches: [] })
 
     const target = targetRes.rows[0]
     const oppositeType = target.type === 'lost' ? 'found' : 'lost'

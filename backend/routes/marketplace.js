@@ -1,5 +1,6 @@
 const express = require('express')
 const router = express.Router()
+const crypto = require('crypto')
 const { query } = require('../config/database')
 const { authenticate } = require('../middleware/auth')
 const { uploadSingle, deleteFiles } = require('../middleware/upload')
@@ -8,6 +9,8 @@ const { uploadSingle, deleteFiles } = require('../middleware/upload')
 router.get('/', authenticate, async (req, res) => {
   try {
     const { q, category, condition, sort, status, seller_id } = req.query
+    const userId = req.user ? req.user.id : null
+
     let sql = `
       SELECT m.*,
         u.first_name || ' ' || u.last_name as seller_name,
@@ -15,13 +18,14 @@ router.get('/', authenticate, async (req, res) => {
         u.department as seller_department,
         u.student_id as seller_student_id,
         u.id as seller_id,
-        CASE WHEN array_length(m.images, 1) > 0 THEN m.images[1] ELSE NULL END as image_url
+        CASE WHEN array_length(m.images, 1) > 0 THEN m.images[1] ELSE NULL END as image_url,
+        EXISTS(SELECT 1 FROM marketplace_favorites f WHERE f.listing_id = m.id AND f.user_id = $1) as is_favorite
       FROM marketplace_listings m
       JOIN users u ON u.id = m.seller_id
       WHERE 1=1
     `
-    const params = []
-    let idx = 1
+    const params = [userId]
+    let idx = 2
 
     if (status === 'available') {
       sql += ` AND m.is_sold = false`
@@ -67,15 +71,6 @@ router.get('/', authenticate, async (req, res) => {
       sql += ` ORDER BY m.created_at DESC`
     }
 
-    // -------------------------------------------------------------------------
-    // ARCHITECTURAL SCALABILITY ROADMAP:
-    // Server-Side LIMIT / OFFSET Pagination.
-    // For current campus datasets (thousands of listings), OFFSET pagination provides
-    // instant query response times and clean page navigation UI.
-    // Scalability Note: When scaling to millions of records, transition to
-    // Keyset / Cursor Pagination (WHERE created_at < $cursor ORDER BY created_at DESC LIMIT $limit)
-    // to eliminate O(N) offset table scan costs.
-    // -------------------------------------------------------------------------
     const pageNum = parseInt(req.query.page) || 1
     const limitNum = parseInt(req.query.limit) || 12
     const offsetNum = (pageNum - 1) * limitNum
@@ -99,9 +94,94 @@ router.get('/', authenticate, async (req, res) => {
   }
 })
 
+// GET /api/marketplace/favorites
+router.get('/favorites', authenticate, async (req, res) => {
+  try {
+    const pageNum = parseInt(req.query.page) || 1
+    const limitNum = parseInt(req.query.limit) || 12
+    const offsetNum = (pageNum - 1) * limitNum
+
+    const countSql = `SELECT COUNT(*) FROM marketplace_favorites WHERE user_id = $1`
+    const countResult = await query(countSql, [req.user.id])
+    const total = parseInt(countResult.rows[0].count)
+
+    const sql = `
+      SELECT m.*,
+        u.first_name || ' ' || u.last_name as seller_name,
+        u.email as seller_email,
+        u.department as seller_department,
+        u.student_id as seller_student_id,
+        u.id as seller_id,
+        CASE WHEN array_length(m.images, 1) > 0 THEN m.images[1] ELSE NULL END as image_url,
+        true as is_favorite
+      FROM marketplace_favorites f
+      JOIN marketplace_listings m ON m.id = f.listing_id
+      JOIN users u ON u.id = m.seller_id
+      WHERE f.user_id = $1
+      ORDER BY f.created_at DESC
+      LIMIT $2 OFFSET $3
+    `
+    const result = await query(sql, [req.user.id, limitNum, offsetNum])
+    res.json({
+      products: result.rows,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to load favorite listings' })
+  }
+})
+
+// POST /api/marketplace/:id/favorite (Toggle favorite state)
+router.post('/:id/favorite', authenticate, async (req, res) => {
+  try {
+    const listingId = req.params.id
+    const userId = req.user.id
+
+    const checkListing = await query('SELECT id FROM marketplace_listings WHERE id = $1', [listingId])
+    if (checkListing.rows.length === 0) return res.status(404).json({ message: 'Listing not found' })
+
+    const existing = await query(
+      'SELECT 1 FROM marketplace_favorites WHERE user_id = $1 AND listing_id = $2',
+      [userId, listingId]
+    )
+
+    if (existing.rows.length > 0) {
+      await query('DELETE FROM marketplace_favorites WHERE user_id = $1 AND listing_id = $2', [userId, listingId])
+      return res.json({ favorited: false, message: 'Removed from favorites' })
+    } else {
+      await query('INSERT INTO marketplace_favorites (user_id, listing_id) VALUES ($1, $2)', [userId, listingId])
+      return res.json({ favorited: true, message: 'Saved to favorites' })
+    }
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to toggle favorite status' })
+  }
+})
+
+// DELETE /api/marketplace/:id/favorite
+router.delete('/:id/favorite', authenticate, async (req, res) => {
+  try {
+    const listingId = req.params.id
+    const userId = req.user.id
+
+    await query('DELETE FROM marketplace_favorites WHERE user_id = $1 AND listing_id = $2', [userId, listingId])
+    res.json({ favorited: false, message: 'Removed from favorites' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to remove favorite' })
+  }
+})
+
 // GET /api/marketplace/:id
 router.get('/:id', authenticate, async (req, res) => {
   try {
+    const userId = req.user ? req.user.id : null
     const result = await query(`
       SELECT m.*,
         u.first_name || ' ' || u.last_name as seller_name,
@@ -110,11 +190,12 @@ router.get('/:id', authenticate, async (req, res) => {
         u.student_id as seller_student_id,
         u.phone as seller_phone,
         u.id as seller_id,
-        CASE WHEN array_length(m.images, 1) > 0 THEN m.images[1] ELSE NULL END as image_url
+        CASE WHEN array_length(m.images, 1) > 0 THEN m.images[1] ELSE NULL END as image_url,
+        EXISTS(SELECT 1 FROM marketplace_favorites f WHERE f.listing_id = m.id AND f.user_id = $2) as is_favorite
       FROM marketplace_listings m
       JOIN users u ON u.id = m.seller_id
       WHERE m.id = $1
-    `, [req.params.id])
+    `, [req.params.id, userId])
     if (result.rows.length === 0) return res.status(404).json({ message: 'Listing not found' })
 
     const product = result.rows[0]
@@ -141,6 +222,20 @@ router.post('/:id/report', authenticate, async (req, res) => {
     const { reason, details } = req.body
     if (!reason) return res.status(400).json({ message: 'Reason is required' })
 
+    const listingId = req.params.id
+    const reporterId = req.user.id
+
+    const listingCheck = await query('SELECT id FROM marketplace_listings WHERE id = $1', [listingId])
+    if (listingCheck.rows.length === 0) return res.status(404).json({ message: 'Listing not found' })
+
+    const reportId = crypto.randomUUID()
+
+    await query(
+      `INSERT INTO marketplace_reports (id, listing_id, reporter_id, reason, details)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [reportId, listingId, reporterId, reason, details || '']
+    )
+
     const admins = await query("SELECT id FROM users WHERE role = 'admin'")
     for (const admin of admins.rows) {
       await query(
@@ -148,7 +243,7 @@ router.post('/:id/report', authenticate, async (req, res) => {
         [
           admin.id,
           'Listing Reported ⚠️',
-          `Listing #${req.params.id.slice(0, 8)} reported by user: ${reason} - ${details || 'No details'}`,
+          `Listing #${listingId.slice(0, 8)} reported by user: ${reason} - ${details || 'No details'}`,
           'system'
         ]
       )
@@ -160,6 +255,7 @@ router.post('/:id/report', authenticate, async (req, res) => {
     res.status(500).json({ message: 'Failed to submit report' })
   }
 })
+
 
 // POST /api/marketplace (Uses magic-byte protected file upload)
 router.post('/', authenticate, uploadSingle('image'), async (req, res) => {

@@ -8,18 +8,25 @@ const path = require('path')
 const crypto = require('crypto')
 
 const { validateEnvironment } = require('./config/envValidation')
+const { requestLogger } = require('./middleware/errorLogger')
+const { applySecurityHeaders, sanitizeInputMiddleware } = require('./middleware/securityHardening')
 
 // Enforce Phase 3 Environment Validation Gate
 validateEnvironment()
 
 const app = express()
 
-// Request ID Tracing Middleware
+// Structured Request Logging & Request ID Tracing Middleware
+app.use(requestLogger)
+app.use(applySecurityHeaders)
+app.use(sanitizeInputMiddleware)
 app.use((req, res, next) => {
-  req.id = req.headers['x-request-id'] || crypto.randomUUID()
+  req.id = req.headers['x-request-id'] || req.id || crypto.randomUUID()
   res.setHeader('X-Request-ID', req.id)
   next()
 })
+
+
 
 // Security & Middleware (Helmet CSP & HTTP Security Headers)
 const isProd = process.env.NODE_ENV === 'production'
@@ -123,7 +130,11 @@ app.get('/api/health/ready', async (req, res) => {
       timestamp: new Date().toISOString()
     })
   }
+})
+
+
 app.get(['/api/admin/system-health', '/api/admin/metrics'], (req, res) => {
+
   const systemHealth = getSystemMetrics()
   res.json(systemHealth)
 })

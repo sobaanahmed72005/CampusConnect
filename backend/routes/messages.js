@@ -7,8 +7,11 @@ const crypto = require('crypto')
 const { query } = require('../config/database')
 const { authenticate } = require('../middleware/auth')
 const { isUuid, isValidString } = require('../middleware/validate')
+const { sendPushToUser } = require('../services/pushService')
+const { recordActivity } = require('../services/telemetryService')
 
 router.use(authenticate)
+
 
 // POST /api/messages/conversations - Start or retrieve conversation for a marketplace listing
 router.post('/conversations', async (req, res) => {
@@ -146,8 +149,17 @@ router.post('/conversations/:id/messages', async (req, res) => {
 
     await query('UPDATE marketplace_conversations SET updated_at = NOW() WHERE id = $1', [id])
 
+    const recipientId = conv.buyer_id === req.user.id ? conv.seller_id : conv.buyer_id
+    sendPushToUser(recipientId, {
+      title: `New Marketplace Message 💬`,
+      body: `New message on listing: "${content.trim().slice(0, 50)}"`,
+      url: '/marketplace'
+    }).catch(() => {})
+    recordActivity(req.user.id, 'MESSAGE_SENT', 'CONVERSATION', id)
+
     res.status(201).json({ message: msgRes.rows[0] })
   } catch (err) {
+
     console.error('Error sending message:', err)
     res.status(500).json({ message: 'Failed to send message' })
   }

@@ -1,5 +1,6 @@
 import React from 'react'
-import { Search } from 'lucide-react'
+import { Search, X } from 'lucide-react'
+import './FilterBar.css'
 
 export default function FilterBar({
   search,
@@ -8,35 +9,71 @@ export default function FilterBar({
   categories = [],
   activeCategory,
   onCategoryChange,
-  extraFilters
+  extraFilters,
+  children
 }) {
+  const hasExtra = extraFilters || children
+
   return (
-    <div className="events-toolbar mb-6">
-      {onSearchChange && (
-        <div className="search-bar" style={{ flex: 1, maxWidth: '420px' }}>
-          <Search size={16} className="search-icon" />
-          <input
-            type="search"
-            placeholder={searchPlaceholder}
-            value={search}
-            onChange={e => onSearchChange(e.target.value)}
-          />
+    <div className="modern-filter-bar mb-6">
+      {/* Top Tier: Search Box (Left) + Filter Actions (Right) */}
+      {(onSearchChange || hasExtra) && (
+        <div className="filter-bar-top">
+          {onSearchChange && (
+            <div className="filter-search-box">
+              <Search size={15} className="filter-search-icon" />
+              <input
+                type="text"
+                className="filter-search-input"
+                placeholder={searchPlaceholder}
+                value={search || ''}
+                onChange={e => onSearchChange(e.target.value)}
+              />
+              {search && (
+                <button
+                  type="button"
+                  className="filter-search-clear"
+                  onClick={() => onSearchChange('')}
+                  aria-label="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          )}
+
+          {hasExtra && (
+            <div className="filter-bar-extra">
+              {extraFilters}
+              {children}
+            </div>
+          )}
         </div>
       )}
+
+      {/* Hairline Divider */}
+      {categories.length > 0 && (onSearchChange || hasExtra) && (
+        <div className="filter-bar-divider" />
+      )}
+
+      {/* Bottom Tier: Category Chips Track */}
       {categories.length > 0 && (
-        <div className="tabs">
-          {categories.map(c => (
-            <button
-              key={c}
-              className={`tab ${activeCategory === c ? 'active' : ''}`}
-              onClick={() => onCategoryChange && onCategoryChange(c)}
-            >
-              {c}
-            </button>
-          ))}
+        <div className="filter-pills-track">
+          {categories.map(c => {
+            const isActive = activeCategory === c
+            return (
+              <button
+                key={c}
+                type="button"
+                className={`filter-pill-btn ${isActive ? 'active' : ''}`}
+                onClick={() => onCategoryChange && onCategoryChange(c)}
+              >
+                {c}
+              </button>
+            )
+          })}
         </div>
       )}
-      {extraFilters && <div className="flex gap-2 items-center">{extraFilters}</div>}
     </div>
   )
 }

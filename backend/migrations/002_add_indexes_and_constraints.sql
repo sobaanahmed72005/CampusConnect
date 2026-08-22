@@ -28,3 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_user ON marketplace_favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_listing ON marketplace_favorites(listing_id);
+CREATE INDEX IF NOT EXISTS idx_reports_listing ON marketplace_reports(listing_id);
+CREATE INDEX IF NOT EXISTS idx_reports_status ON marketplace_reports(status);

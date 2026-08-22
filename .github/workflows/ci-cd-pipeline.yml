@@ -1,0 +1,104 @@
+name: CampusConnect Production CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-build:
+    name: Automated Integration Testing & Production Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: campusconnect
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js Environment
+        uses: actions/checkout@v3
+        with:
+          node-version: '20.x'
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Run Backend Integration & Unit Tests
+        env:
+          NODE_ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: campusconnect
+          DB_USER: postgres
+          DB_PASSWORD: postgrespassword
+          JWT_SECRET: test_jwt_secret_256bit_key_for_testing_purposes
+        run: |
+          cd backend
+          npm test
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build Frontend Production Bundle
+        env:
+          VITE_API_URL: http://localhost:5000/api
+        run: |
+          cd frontend
+          npm run build
+
+  deploy-production:
+    name: Production Deployment & Live Smoke Tests
+    needs: test-and-build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+
+      - name: Install Production Dependencies
+        run: |
+          cd backend
+          npm ci --production
+
+      - name: Execute Automated Production Deployment
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.PRODUCTION_JWT_SECRET }}
+          FRONTEND_URL: ${{ secrets.PRODUCTION_FRONTEND_URL }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        run: |
+          node backend/scripts/productionDeploy.js
+
+      - name: Run Live Production Smoke Tests
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: |
+          node backend/scripts/productionSmokeTest.js

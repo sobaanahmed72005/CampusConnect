@@ -204,14 +204,61 @@ router.put('/attendance/:id', async (req, res) => {
   }
 })
 
-// DELETE /api/academic/attendance/:id
-router.delete('/attendance/:id', async (req, res) => {
+// GET /api/academic/calendar
+router.get('/calendar', async (req, res) => {
   try {
-    await query('DELETE FROM attendance WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id])
-    res.json({ message: 'Attendance record deleted' })
+    const calendarEvents = [
+      { id: 1, title: 'Spring 2026 Semester Commencement', date: '2026-01-15', category: 'Milestone', description: 'Classes commence for all undergraduate & graduate programs.' },
+      { id: 2, title: 'Course Add / Drop Deadline', date: '2026-01-29', category: 'Deadline', description: 'Last date to add or drop courses without penalty.' },
+      { id: 3, title: 'Midterm Examination Week', date: '2026-03-10', category: 'Exam', description: 'Mid-semester examinations across all departments.' },
+      { id: 4, title: 'Spring Semester Recess & Break', date: '2026-04-05', category: 'Holiday', description: 'University recess and spring break week.' },
+      { id: 5, title: 'Final Project Submission Deadline', date: '2026-05-12', category: 'Deadline', description: 'Final capstone & lab project submissions.' },
+      { id: 6, title: 'Spring 2026 Final Examinations', date: '2026-05-20', category: 'Exam', description: 'Final term examinations.' },
+    ]
+    res.json({ calendar: calendarEvents })
   } catch (err) {
-    res.status(500).json({ message: 'Failed to delete attendance' })
+    res.status(500).json({ message: 'Failed to fetch academic calendar' })
+  }
+})
+
+// GET /api/academic/overview
+router.get('/overview', async (req, res) => {
+  try {
+    const [timetableRes, assignmentsRes, attendanceRes] = await Promise.all([
+      query('SELECT * FROM timetable WHERE user_id = $1 ORDER BY day_of_week ASC, start_time ASC', [req.user.id]),
+      query('SELECT * FROM assignments WHERE user_id = $1 AND status = $2 ORDER BY due_date ASC', [req.user.id, 'pending']),
+      query('SELECT * FROM attendance WHERE user_id = $1 ORDER BY subject ASC', [req.user.id])
+    ])
+
+    const totalClassesSum = attendanceRes.rows.reduce((acc, curr) => acc + (curr.total_classes || 0), 0)
+    const attendedClassesSum = attendanceRes.rows.reduce((acc, curr) => acc + (curr.attended_classes || 0), 0)
+    const overallPct = totalClassesSum > 0 ? ((attendedClassesSum / totalClassesSum) * 100).toFixed(1) : 100
+
+    const shortageWarnings = attendanceRes.rows.filter(item => {
+      const pct = item.total_classes > 0 ? (item.attended_classes / item.total_classes) * 100 : 100
+      return pct < 75.0
+    })
+
+    res.json({
+      semester: {
+        name: 'Spring 2026',
+        current_week: 10,
+        total_weeks: 16,
+        progress_percentage: 62.5,
+        target_gpa: '3.80',
+        enrolled_credits: 17
+      },
+      timetable_count: timetableRes.rows.length,
+      pending_assignments_count: assignmentsRes.rows.length,
+      overall_attendance_pct: parseFloat(overallPct),
+      attendance_warnings: shortageWarnings,
+      upcoming_deadlines: assignmentsRes.rows.slice(0, 5)
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to load academic overview' })
   }
 })
 
 module.exports = router
+

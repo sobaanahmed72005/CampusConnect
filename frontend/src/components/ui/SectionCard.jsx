@@ -15,12 +15,12 @@ export default function SectionCard({
 }) {
   return (
     <div className={`card ${className}`}>
-      <div className="section-header" style={{ marginBottom: 'var(--space-4)' }}>
-        <h3 className="flex items-center gap-2" style={{ fontSize: '1.1rem' }}>
+      <div className="section-header flex items-center justify-between flex-wrap gap-2 mb-4">
+        <h3 className="flex items-center gap-2" style={{ fontSize: '1.05rem', fontWeight: 700 }}>
           {Icon && <Icon size={18} style={{ color: iconColor }} />}
           {title}
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {badgeText && <span className={`badge ${badgeClass}`}>{badgeText}</span>}
           {actionLink && (
             <Link to={actionLink} className="text-sm text-primary-color flex items-center gap-1 font-semibold">

@@ -5,6 +5,9 @@ const socketIo = require('socket.io')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 const { query } = require('./database')
+const { sendPushToUser } = require('../services/pushService')
+const { recordActivity } = require('../services/telemetryService')
+
 
 function initSocket(server) {
   const io = socketIo(server, {
@@ -111,7 +114,16 @@ function initSocket(server) {
 
         const roomName = `conversation:${conversation_id}`
         io.to(roomName).emit('receive_message', messagePayload)
+
+        const recipientId = conv.buyer_id === socket.user.id ? conv.seller_id : conv.buyer_id
+        sendPushToUser(recipientId, {
+          title: `New Marketplace Message 💬`,
+          body: `${socket.user.first_name}: ${content.trim().slice(0, 60)}`,
+          url: '/marketplace'
+        }).catch(() => {})
+        recordActivity(socket.user.id, 'MESSAGE_SENT', 'CONVERSATION', conversation_id)
       } catch (err) {
+
         socket.emit('error', { message: 'Failed to dispatch real-time message' })
       }
     })

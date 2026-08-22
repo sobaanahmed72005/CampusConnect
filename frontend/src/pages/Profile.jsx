@@ -3,13 +3,30 @@ import { useAuth } from '../contexts/AuthContext'
 import api from '../lib/api'
 import {
   User, Edit, Calendar, ShoppingBag, Camera, Save, X, KeyRound,
-  Shield, Bell, Lock, Trash2, LogOut, CheckCircle2, AlertTriangle
+  Shield, Bell, Lock, Trash2, LogOut, CheckCircle2, AlertTriangle,
+  Award, Sparkles, BookOpen, Tag, Plus, Check, MapPin, Search
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import PageHeader from '../components/ui/PageHeader'
 import EmptyState from '../components/ui/EmptyState'
 import ConfirmModal from '../components/ui/ConfirmModal'
 import './Profile.css'
+import { subscribeUserToPush, unsubscribeUserFromPush } from '../lib/pushManager'
+
+const DEPARTMENTS = [
+  'Computer Science', 'Software Engineering', 'Artificial Intelligence',
+  'Cyber Security', 'Data Science', 'Electrical Engineering',
+  'Business Administration', 'Accounting & Finance'
+]
+
+const SEMESTERS = [
+  'Semester 1', 'Semester 2', 'Semester 3', 'Semester 4',
+  'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8',
+  'Alumni / Postgraduate'
+]
+
+const POPULAR_SKILLS = ['React', 'Node.js', 'Python', 'Machine Learning', 'Figma', 'C++', 'Java', 'SQL', 'Flutter', 'TailwindCSS']
+const POPULAR_INTERESTS = ['Competitive Programming', 'Web Development', 'AI/ML', 'Cybersecurity', 'Gaming', 'Football', 'Music', 'Photography']
 
 export default function Profile() {
   const { user, updateUser, logout } = useAuth()
@@ -18,38 +35,69 @@ export default function Profile() {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
-  const [tab, setTab] = useState('info') // info | settings | preferences | privacy | events | listings
+  const [tab, setTab] = useState('info') // info | academic | activity | security
+
+  // Skills & Interests State
+  const [skills, setSkills] = useState([])
+  const [interests, setInterests] = useState([])
+  const [newSkill, setNewSkill] = useState('')
+  const [newInterest, setNewInterest] = useState('')
+
+  // Activity Stats State
+  const [activityStats, setActivityStats] = useState({ listingsCount: 0, rsvpCount: 0, lostFoundCount: 0 })
 
   // Change Password State
   const [pwForm, setPwForm] = useState({ current_password: '', new_password: '', confirm_password: '' })
   const [changingPw, setChangingPw] = useState(false)
 
-  // Notification Preferences State
-  const [notifPrefs, setNotifPrefs] = useState({
-    email_alerts: true,
-    event_reminders: true,
-    marketplace_inquiries: true,
-    campus_broadcasts: true
-  })
-
   // Privacy Settings State
   const [privacyPrefs, setPrivacyPrefs] = useState({
-    profile_visible: true,
-    show_contact: true,
-    show_activity: false
+    profile_visibility: 'Students Only',
+    show_email: true,
+    show_phone: false
   })
 
-  // Delete Account State
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [deletePw, setDeletePw] = useState('')
-  const [deletingAccount, setDeletingAccount] = useState(false)
-
   useEffect(() => {
-    api.get('/profile')
-      .then(res => { setProfile(res.data.user); setForm(res.data.user) })
-      .catch(() => toast.error('Failed to load profile details'))
-      .finally(() => setLoading(false))
+    fetchProfile()
   }, [])
+
+  const fetchProfile = async () => {
+    setLoading(true)
+    try {
+      const res = await api.get('/profile')
+      const u = res.data.user || {}
+      setProfile(u)
+      setForm(u)
+
+      // Load saved skills & interests or defaults
+      try {
+        const sk = localStorage.getItem(`cc_skills_${u.id}`)
+        if (sk) setSkills(JSON.parse(sk))
+        else setSkills(['React', 'Node.js', 'Python'])
+
+        const it = localStorage.getItem(`cc_interests_${u.id}`)
+        if (it) setInterests(JSON.parse(it))
+        else setInterests(['Web Development', 'AI/ML', 'Gaming'])
+      } catch {}
+
+      // Fetch stats count
+      try {
+        const mktRes = await api.get('/marketplace?my=true').catch(() => ({ data: { listings: [] } }))
+        const eventRes = await api.get('/events').catch(() => ({ data: { events: [] } }))
+        const lfRes = await api.get('/lost-found').catch(() => ({ data: { items: [] } }))
+        setActivityStats({
+          listingsCount: mktRes.data.listings?.length || 0,
+          rsvpCount: eventRes.data.events?.filter(e => e.user_rsvp).length || 0,
+          lostFoundCount: lfRes.data.items?.length || 0
+        })
+      } catch {}
+
+    } catch {
+      toast.error('Failed to load profile details')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -57,7 +105,14 @@ export default function Profile() {
       const res = await api.put('/profile', form)
       setProfile(res.data.user)
       updateUser(res.data.user)
-      toast.success('Profile updated successfully!')
+
+      // Persist skills & interests
+      if (profile?.id) {
+        localStorage.setItem(`cc_skills_${profile.id}`, JSON.stringify(skills))
+        localStorage.setItem(`cc_interests_${profile.id}`, JSON.stringify(interests))
+      }
+
+      toast.success('Profile details updated successfully! 🎉')
       setEditing(false)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Update failed')
@@ -66,375 +121,301 @@ export default function Profile() {
     }
   }
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault()
-    if (!pwForm.current_password || !pwForm.new_password) {
-      return toast.error('Please enter your current and new password')
-    }
-    if (pwForm.new_password !== pwForm.confirm_password) {
-      return toast.error('New passwords do not match')
-    }
-    if (pwForm.new_password.length < 8) {
-      return toast.error('New password must be at least 8 characters long')
-    }
-
-    setChangingPw(true)
-    try {
-      const res = await api.post('/profile/change-password', {
-        current_password: pwForm.current_password,
-        new_password: pwForm.new_password
-      })
-      toast.success(res.data.message || 'Password changed successfully!')
-      setPwForm({ current_password: '', new_password: '', confirm_password: '' })
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to change password')
-    } finally {
-      setChangingPw(false)
-    }
+  const addSkill = (skillToAdd) => {
+    const val = skillToAdd || newSkill.trim()
+    if (!val) return
+    if (skills.includes(val)) return toast.error('Skill already added')
+    const next = [...skills, val]
+    setSkills(next)
+    setNewSkill('')
+    if (profile?.id) localStorage.setItem(`cc_skills_${profile.id}`, JSON.stringify(next))
   }
 
-  const handleDeactivateAccount = async () => {
-    if (!deletePw) return toast.error('Please enter your password to confirm')
-    setDeletingAccount(true)
-    try {
-      await api.delete('/profile/account', { data: { password: deletePw } })
-      toast.success('Your account has been deactivated.')
-      logout()
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to deactivate account')
-    } finally {
-      setDeletingAccount(false)
-    }
+  const removeSkill = (skillToRemove) => {
+    const next = skills.filter(s => s !== skillToRemove)
+    setSkills(next)
+    if (profile?.id) localStorage.setItem(`cc_skills_${profile.id}`, JSON.stringify(next))
   }
 
-  if (loading) return <div className="flex items-center justify-center" style={{ height: '60vh' }}><div className="spinner spinner-lg" /></div>
+  const addInterest = (interestToAdd) => {
+    const val = interestToAdd || newInterest.trim()
+    if (!val) return
+    if (interests.includes(val)) return toast.error('Interest already added')
+    const next = [...interests, val]
+    setInterests(next)
+    setNewInterest('')
+    if (profile?.id) localStorage.setItem(`cc_interests_${profile.id}`, JSON.stringify(next))
+  }
+
+  const removeInterest = (interestToRemove) => {
+    const next = interests.filter(i => i !== interestToRemove)
+    setInterests(next)
+    if (profile?.id) localStorage.setItem(`cc_interests_${profile.id}`, JSON.stringify(next))
+  }
+
+  // Calculate Profile Completeness Percentage
+  const calculateCompleteness = () => {
+    let score = 30 // Base account registration
+    if (profile?.avatar || profile?.image_url) score += 15
+    if (profile?.phone || profile?.bio) score += 15
+    if (form?.department || profile?.department) score += 15
+    if (form?.semester || profile?.semester) score += 10
+    if (skills.length > 0) score += 15
+    return Math.min(100, score)
+  }
+
+  const completenessScore = calculateCompleteness()
+
+  if (loading) return <div className="flex items-center justify-center p-12"><div className="spinner spinner-lg" /></div>
 
   const initials = profile ? (profile.first_name?.[0] || '') + (profile.last_name?.[0] || '') : 'U'
-  const joinedDate = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '2026'
 
   return (
-    <div className="profile-page animate-fade">
+    <div className="animate-fade">
       <PageHeader
         icon={User}
-        title="Student Profile & Account Settings"
-        subtitle="Manage your personal details, password security, privacy, and campus activity"
+        title="Student Profile & Personalization 2.0"
+        subtitle="Manage your academic portfolio, skills, campus activities, and account security"
         iconColor="var(--primary)"
+        action={
+          !editing ? (
+            <button className="btn btn-primary btn-sm" onClick={() => setEditing(true)}>
+              <Edit size={14} /> Edit Profile
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button className="btn btn-ghost btn-sm" onClick={() => setEditing(false)}>Cancel</button>
+              <button className="btn btn-success btn-sm" onClick={handleSave} disabled={saving}>
+                <Save size={14} /> {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          )
+        }
       />
 
-      {/* Profile Hero Card */}
-      <div className="profile-hero card mb-6">
-        <div className="profile-avatar-wrap">
-          <div className="avatar avatar-xl profile-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : initials}</div>
-          <button className="avatar-upload-btn" onClick={() => toast('Profile photo upload updated!')} aria-label="Upload photo"><Camera size={14} /></button>
-        </div>
-        <div className="profile-info">
-          <h2>{profile?.first_name} {profile?.last_name}</h2>
-          <p className="profile-role">{profile?.department || 'Computer Science'} · Student ID: {profile?.student_id || 'DEMO_2026'}</p>
-          <div className="profile-badges flex items-center gap-2 mt-2">
-            <span className="badge badge-primary badge-dot">{user?.role === 'admin' ? 'Administrator' : 'Verified Student'}</span>
-            <span className="badge badge-muted">{profile?.email}</span>
-            <span className="badge badge-accent text-xs">Member since {joinedDate}</span>
+      {/* Profile Header & Completeness Bar */}
+      <div className="card glass-card mb-6 p-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <div className="avatar avatar-lg shadow-lg" style={{ width: 64, height: 64, fontSize: '1.3rem', fontWeight: 800 }}>
+              {initials}
+            </div>
+            <div>
+              <h2 className="font-extrabold text-lg flex items-center gap-2">
+                {profile?.first_name} {profile?.last_name}
+                <span className="badge badge-accent text-xs">Verified Student</span>
+              </h2>
+              <p className="text-xs text-muted mt-0.5">{profile?.email} • {form?.department || 'Computer Science'}</p>
+            </div>
+          </div>
+
+          {/* Profile Completeness Gauge */}
+          <div style={{ flex: '1 1 240px', maxWidth: '320px' }}>
+            <div className="flex justify-between text-xs font-semibold mb-1">
+              <span>Profile Completeness</span>
+              <span className="text-primary font-bold">{completenessScore}%</span>
+            </div>
+            <div style={{ height: 8, background: 'var(--bg-surface)', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{ width: `${completenessScore}%`, height: '100%', background: 'linear-gradient(90deg, var(--primary), var(--accent))', transition: 'width 0.5s ease' }} />
+            </div>
           </div>
         </div>
-        <button className="btn btn-outline btn-sm ml-auto" onClick={() => setEditing(true)}>
-          <Edit size={14} /> Edit Profile
+      </div>
+
+      {/* Profile Tabs */}
+      <div className="tabs mb-6">
+        <button className={`tab ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}>
+          👤 Personal & Contact Info
+        </button>
+        <button className={`tab ${tab === 'academic' ? 'active' : ''}`} onClick={() => setTab('academic')}>
+          🎓 Academic Portfolio & Skills
+        </button>
+        <button className={`tab ${tab === 'activity' ? 'active' : ''}`} onClick={() => setTab('activity')}>
+          📊 Campus Activity & Stats
         </button>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="tabs mb-6">
-        {[
-          { key: 'info', label: '👤 Personal Info' },
-          { key: 'settings', label: '🔑 Change Password' },
-          { key: 'preferences', label: '🔔 Notifications' },
-          { key: 'privacy', label: '🛡️ Privacy & Security' },
-          { key: 'events', label: '📅 My Events' },
-          { key: 'listings', label: '🛍️ My Listings' }
-        ].map(t => (
-          <button key={t.key} className={`tab ${tab === t.key ? 'active' : ''}`} onClick={() => setTab(t.key)}>{t.label}</button>
-        ))}
-      </div>
-
-      {/* TAB 1: Personal Info */}
+      {/* TAB 1: Personal & Contact Info */}
       {tab === 'info' && (
-        <div className="card">
-          <h3 style={{ marginBottom: 'var(--space-5)' }}>Personal & Academic Details</h3>
-          <div className="profile-info-grid">
-            {[
-              { label: 'First Name', value: profile?.first_name },
-              { label: 'Last Name', value: profile?.last_name },
-              { label: 'Student Email', value: profile?.email },
-              { label: 'Student ID', value: profile?.student_id },
-              { label: 'Department / Program', value: profile?.department || 'Computer Science' },
-              { label: 'Academic Year', value: profile?.year_of_study ? `Year ${profile.year_of_study}` : '3rd Year' },
-              { label: 'Phone Number', value: profile?.phone || 'Not provided' },
-              { label: 'Joined Platform', value: joinedDate },
-              { label: 'Bio / About Me', value: profile?.bio || 'Computer Science student passionate about campus software development and technology.' },
-            ].map(({ label, value }) => (
-              <div key={label} className="profile-info-item">
-                <span className="profile-info-label">{label}</span>
-                <span className="profile-info-value">{value}</span>
-              </div>
-            ))}
+        <div className="card glass-card p-6">
+          <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+            <User size={18} className="text-primary" /> Personal Information
+          </h3>
+
+          <div className="grid-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-muted block mb-1">First Name</label>
+              <input
+                type="text"
+                className="form-input text-xs"
+                value={form.first_name || ''}
+                onChange={e => setForm({ ...form, first_name: e.target.value })}
+                disabled={!editing}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted block mb-1">Last Name</label>
+              <input
+                type="text"
+                className="form-input text-xs"
+                value={form.last_name || ''}
+                onChange={e => setForm({ ...form, last_name: e.target.value })}
+                disabled={!editing}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted block mb-1">University Email</label>
+              <input type="email" className="form-input text-xs" value={form.email || ''} disabled />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted block mb-1">Phone Number</label>
+              <input
+                type="text"
+                className="form-input text-xs"
+                placeholder="e.g. 0300-1234567"
+                value={form.phone || ''}
+                onChange={e => setForm({ ...form, phone: e.target.value })}
+                disabled={!editing}
+              />
+            </div>
+            <div className="grid-full">
+              <label className="text-xs font-semibold text-muted block mb-1">Student Bio</label>
+              <textarea
+                className="form-textarea text-xs"
+                rows={3}
+                placeholder="Share a short bio about your studies, passions, and student projects..."
+                value={form.bio || ''}
+                onChange={e => setForm({ ...form, bio: e.target.value })}
+                disabled={!editing}
+              />
+            </div>
           </div>
         </div>
       )}
 
-      {/* TAB 2: Change Password */}
-      {tab === 'settings' && (
-        <div className="card" style={{ maxWidth: '560px' }}>
-          <h3 style={{ marginBottom: 'var(--space-2)' }} className="flex items-center gap-2">
-            <KeyRound size={18} className="text-primary" /> Change Password
-          </h3>
-          <p className="text-xs text-muted mb-6">Ensure your account uses a strong, unique password.</p>
-
-          <form onSubmit={handleChangePassword}>
-            <div className="form-group mb-4">
-              <label className="form-label text-xs font-semibold">Current Password</label>
-              <input
-                type="password"
-                className="form-input text-xs"
-                placeholder="Enter your current password"
-                value={pwForm.current_password}
-                onChange={e => setPwForm(f => ({ ...f, current_password: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="form-group mb-4">
-              <label className="form-label text-xs font-semibold">New Password</label>
-              <input
-                type="password"
-                className="form-input text-xs"
-                placeholder="Min 8 characters (uppercase, lowercase, number)"
-                value={pwForm.new_password}
-                onChange={e => setPwForm(f => ({ ...f, new_password: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="form-group mb-6">
-              <label className="form-label text-xs font-semibold">Confirm New Password</label>
-              <input
-                type="password"
-                className="form-input text-xs"
-                placeholder="Re-enter your new password"
-                value={pwForm.confirm_password}
-                onChange={e => setPwForm(f => ({ ...f, confirm_password: e.target.value }))}
-                required
-              />
-            </div>
-
-            <button type="submit" className="btn btn-primary w-full" disabled={changingPw}>
-              {changingPw ? 'Updating Password...' : 'Update Password'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* TAB 3: Notification Preferences */}
-      {tab === 'preferences' && (
-        <div className="card">
-          <h3 style={{ marginBottom: 'var(--space-2)' }} className="flex items-center gap-2">
-            <Bell size={18} className="text-accent" /> Notification Preferences
-          </h3>
-          <p className="text-xs text-muted mb-6">Choose how and when you receive campus alerts and messages.</p>
-
-          <div className="flex flex-col gap-4">
-            {[
-              { key: 'email_alerts', title: '📧 Email Notification Digests', desc: 'Receive important campus updates and account alerts via email' },
-              { key: 'event_reminders', title: '📅 Event Reminders', desc: 'Get notified 1 hour before registered campus workshops and contests' },
-              { key: 'marketplace_inquiries', title: '💬 Marketplace Inquiries', desc: 'Receive instant notifications when buyers ask about your listings' },
-              { key: 'campus_broadcasts', title: '📢 Official University Announcements', desc: 'Alerts for midterm schedules, library closures, and university notices' },
-            ].map(({ key, title, desc }) => (
-              <div key={key} className="flex items-center justify-between p-3 card" style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)' }}>
-                <div>
-                  <div className="font-bold text-sm">{title}</div>
-                  <div className="text-xs text-muted">{desc}</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notifPrefs[key]}
-                  onChange={e => {
-                    setNotifPrefs(p => ({ ...p, [key]: e.target.checked }))
-                    toast.success('Notification preference saved')
-                  }}
-                  style={{ width: 18, height: 18, cursor: 'pointer' }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 4: Privacy Settings & Danger Zone */}
-      {tab === 'privacy' && (
+      {/* TAB 2: Academic Portfolio & Skills */}
+      {tab === 'academic' && (
         <div className="flex flex-col gap-6">
-          <div className="card">
-            <h3 style={{ marginBottom: 'var(--space-2)' }} className="flex items-center gap-2">
-              <Shield size={18} className="text-primary" /> Privacy Controls
+          <div className="card glass-card p-6">
+            <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+              <BookOpen size={18} className="text-accent" /> Academic Program & Semester
             </h3>
-            <p className="text-xs text-muted mb-6">Manage what information is visible to other students.</p>
 
-            <div className="flex flex-col gap-4">
-              {[
-                { key: 'profile_visible', title: '👥 Public Student Profile', desc: 'Allow other verified students to view your program and department' },
-                { key: 'show_contact', title: '📞 Contact Sharing on Marketplace', desc: 'Share your phone number and student email on active listings' },
-                { key: 'show_activity', title: '⚡ Online Activity Indicator', desc: 'Show active status badge when browsing campus platform' },
-              ].map(({ key, title, desc }) => (
-                <div key={key} className="flex items-center justify-between p-3 card" style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)' }}>
-                  <div>
-                    <div className="font-bold text-sm">{title}</div>
-                    <div className="text-xs text-muted">{desc}</div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={privacyPrefs[key]}
-                    onChange={e => {
-                      setPrivacyPrefs(p => ({ ...p, [key]: e.target.checked }))
-                      toast.success('Privacy setting updated')
-                    }}
-                    style={{ width: 18, height: 18, cursor: 'pointer' }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Danger Zone */}
-          <div className="card" style={{ border: '1px solid var(--danger-light)', background: 'rgba(239, 68, 68, 0.04)' }}>
-            <h3 style={{ marginBottom: 'var(--space-2)', color: 'var(--danger)' }} className="flex items-center gap-2">
-              <AlertTriangle size={18} /> Danger Zone
-            </h3>
-            <p className="text-xs text-muted mb-4">Deactivating your account will disable your marketplace listings and campus event registrations.</p>
-            <div className="flex justify-between items-center">
+            <div className="grid-2 gap-4">
               <div>
-                <div className="font-bold text-sm text-danger">Deactivate Account</div>
-                <div className="text-xs text-muted">Temporarily or permanently disable access to your student profile.</div>
+                <label className="text-xs font-semibold text-muted block mb-1">Department</label>
+                <select
+                  className="form-select text-xs"
+                  value={form.department || 'Computer Science'}
+                  onChange={e => setForm({ ...form, department: e.target.value })}
+                  disabled={!editing}
+                >
+                  {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
               </div>
-              <button className="btn btn-danger btn-sm" onClick={() => setShowDeleteModal(true)}>
-                <Trash2 size={14} /> Deactivate Account
-              </button>
+
+              <div>
+                <label className="text-xs font-semibold text-muted block mb-1">Current Semester</label>
+                <select
+                  className="form-select text-xs"
+                  value={form.semester || 'Semester 5'}
+                  onChange={e => setForm({ ...form, semester: e.target.value })}
+                  disabled={!editing}
+                >
+                  {SEMESTERS.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* TAB 5: My Events */}
-      {tab === 'events' && <ProfileEvents />}
+          {/* Technical Skills & Interests Badges */}
+          <div className="card glass-card p-6">
+            <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+              <Sparkles size={18} className="text-warning" /> Technical Skills & Interests Portfolio
+            </h3>
 
-      {/* TAB 6: My Listings */}
-      {tab === 'listings' && <ProfileListings />}
+            {/* Skills Sub-section */}
+            <div className="mb-6">
+              <label className="text-xs font-bold uppercase text-muted block mb-2">Technical Skills ({skills.length})</label>
+              <div className="flex items-center gap-2 flex-wrap mb-3">
+                {skills.map(s => (
+                  <span key={s} className="badge badge-primary flex items-center gap-1" style={{ fontSize: '0.8rem', padding: '6px 12px' }}>
+                    {s}
+                    {editing && <X size={12} className="cursor-pointer ml-1" onClick={() => removeSkill(s)} />}
+                  </span>
+                ))}
+              </div>
 
-      {/* Edit Profile Modal */}
-      {editing && (
-        <div className="modal-overlay" onClick={() => setEditing(false)}>
-          <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Edit Personal Profile</h3>
-              <button className="btn btn-ghost btn-icon" onClick={() => setEditing(false)}><X size={18} /></button>
-            </div>
-            <div className="grid-2" style={{ gap: '12px' }}>
-              {[['first_name', 'First Name'], ['last_name', 'Last Name'], ['phone', 'Phone Number'], ['year_of_study', 'Year of Study']].map(([k, label]) => (
-                <div key={k} className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">{label}</label>
-                  <input className="form-input" value={form[k] || ''} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} />
+              {editing && (
+                <div className="flex gap-2 max-w-md">
+                  <input
+                    type="text"
+                    className="form-input text-xs"
+                    placeholder="Add custom skill..."
+                    value={newSkill}
+                    onChange={e => setNewSkill(e.target.value)}
+                  />
+                  <button className="btn btn-outline btn-xs" onClick={() => addSkill()}>Add</button>
                 </div>
-              ))}
+              )}
             </div>
-            <div className="form-group mt-3">
-              <label className="form-label">Bio / About Me</label>
-              <textarea className="form-input" value={form.bio || ''} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} rows={3} placeholder="Tell campus peers about yourself..." />
-            </div>
-            <div className="flex gap-3 mt-4">
-              <button className="btn btn-outline flex-1" onClick={() => setEditing(false)}>Cancel</button>
-              <button className={`btn btn-primary flex-1 ${saving ? 'btn-loading' : ''}`} onClick={handleSave} disabled={saving}>
-                {saving ? <><div className="spinner" />Saving...</> : <><Save size={14} /> Save Changes</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Confirm Deactivate Modal */}
-      {showDeleteModal && (
-        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
-          <div className="modal modal-md" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="text-danger flex items-center gap-2"><AlertTriangle size={18} /> Confirm Account Deactivation</h3>
-              <button className="btn btn-ghost btn-icon" onClick={() => setShowDeleteModal(false)}><X size={18} /></button>
-            </div>
-            <p className="text-xs text-muted mb-4">
-              Please enter your account password to confirm deactivation. You can reactivate your account at any time by signing in.
-            </p>
-            <div className="form-group mb-6">
-              <label className="form-label text-xs font-semibold">Account Password</label>
-              <input
-                type="password"
-                className="form-input text-xs"
-                placeholder="Enter password to confirm"
-                value={deletePw}
-                onChange={e => setDeletePw(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button className="btn btn-outline" onClick={() => setShowDeleteModal(false)}>Cancel</button>
-              <button className="btn btn-danger" onClick={handleDeactivateAccount} disabled={deletingAccount}>
-                {deletingAccount ? 'Deactivating...' : 'Confirm Deactivation'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function ProfileEvents() {
-  const [evts, setEvts] = useState([])
-  useEffect(() => { api.get('/profile/events').then(r => setEvts(r.data.events || [])).catch(() => {}) }, [])
-  return (
-    <div className="card">
-      <h3 style={{ marginBottom: 'var(--space-5)' }}><Calendar size={18} style={{ color: 'var(--primary)' }} /> Events Joined</h3>
-      {evts.length === 0 ? (
-        <EmptyState icon={Calendar} title="No events joined yet" description="Explore campus events and register to see them here." />
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {evts.map(e => (
-            <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-4)', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-              <div style={{ textAlign: 'center', minWidth: 40, background: 'var(--primary-100)', borderRadius: 'var(--radius-sm)', padding: '4px 6px' }}>
-                <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary-light)', lineHeight: 1 }}>{new Date(e.date).getDate()}</div>
-                <div style={{ fontSize: '0.6rem', color: 'var(--primary)', fontWeight: 600 }}>{['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][new Date(e.date).getMonth()]}</div>
+            {/* Interests Sub-section */}
+            <div>
+              <label className="text-xs font-bold uppercase text-muted block mb-2">Interests & Hobbies ({interests.length})</label>
+              <div className="flex items-center gap-2 flex-wrap mb-3">
+                {interests.map(i => (
+                  <span key={i} className="badge badge-accent flex items-center gap-1" style={{ fontSize: '0.8rem', padding: '6px 12px' }}>
+                    {i}
+                    {editing && <X size={12} className="cursor-pointer ml-1" onClick={() => removeInterest(i)} />}
+                  </span>
+                ))}
               </div>
-              <div><div style={{ fontWeight: 600 }}>{e.title}</div><div className="text-xs text-muted">{e.location}</div></div>
-              <span className="badge badge-primary ml-auto">{e.category}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
-function ProfileListings() {
-  const [listings, setListings] = useState([])
-  useEffect(() => { api.get('/profile/listings').then(r => setListings(r.data.listings || [])).catch(() => {}) }, [])
-  return (
-    <div className="card">
-      <h3 style={{ marginBottom: 'var(--space-5)' }}><ShoppingBag size={18} style={{ color: 'var(--accent)' }} /> My Marketplace Listings</h3>
-      {listings.length === 0 ? (
-        <EmptyState icon={ShoppingBag} title="No listings yet" description="Post items for sale in the marketplace to see them here." />
-      ) : (
-        <div className="grid-auto-sm">{listings.map(l => (
-          <div key={l.id} style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-            {l.image_url && <img src={l.image_url} alt="" style={{ width: '100%', height: '120px', objectFit: 'cover' }} />}
-            <div style={{ padding: 'var(--space-3)' }}>
-              <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{l.title}</div>
-              <div className="price" style={{ fontSize: '1rem' }}>₹{Number(l.price).toLocaleString()}</div>
-              <span className="badge badge-muted">{l.condition}</span>
+              {editing && (
+                <div className="flex gap-2 max-w-md">
+                  <input
+                    type="text"
+                    className="form-input text-xs"
+                    placeholder="Add custom interest..."
+                    value={newInterest}
+                    onChange={e => setNewInterest(e.target.value)}
+                  />
+                  <button className="btn btn-outline btn-xs" onClick={() => addInterest()}>Add</button>
+                </div>
+              )}
             </div>
           </div>
-        ))}</div>
+        </div>
+      )}
+
+      {/* TAB 3: Campus Activity & Stats */}
+      {tab === 'activity' && (
+        <div className="grid-3 gap-4">
+          <div className="card glass-card p-6 flex flex-col justify-between">
+            <div>
+              <div className="text-xs font-bold text-muted uppercase mb-1">Marketplace Listings</div>
+              <div className="text-3xl font-extrabold text-primary mb-2">{activityStats.listingsCount}</div>
+              <p className="text-xs text-muted">Active and completed products listed on Campus Marketplace.</p>
+            </div>
+          </div>
+
+          <div className="card glass-card p-6 flex flex-col justify-between">
+            <div>
+              <div className="text-xs font-bold text-muted uppercase mb-1">Campus Events Attended</div>
+              <div className="text-3xl font-extrabold text-accent mb-2">{activityStats.rsvpCount}</div>
+              <p className="text-xs text-muted">Confirmed RSVPs for campus life, workshops, and society events.</p>
+            </div>
+          </div>
+
+          <div className="card glass-card p-6 flex flex-col justify-between">
+            <div>
+              <div className="text-xs font-bold text-muted uppercase mb-1">Lost & Found Reports</div>
+              <div className="text-3xl font-extrabold text-warning mb-2">{activityStats.lostFoundCount}</div>
+              <p className="text-xs text-muted">Belongings reported for campus recovery match scanning.</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import {
   ShoppingBag, ArrowLeft, Phone, Edit, Trash2,
-  Eye, Tag, Package, Clock, Share2, ShieldCheck, Flag, MapPin
+  Eye, Tag, Package, Clock, Share2, ShieldCheck, Flag, MapPin, CheckCircle, Sparkles
 } from 'lucide-react'
 import MarketplaceForm from '../components/marketplace/MarketplaceForm'
 import ConfirmModal from '../components/ui/ConfirmModal'
@@ -37,6 +37,7 @@ export default function MarketplaceDetail() {
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [togglingSold, setTogglingSold] = useState(false)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [showContact, setShowContact] = useState(false)
@@ -55,6 +56,9 @@ export default function MarketplaceDetail() {
       setSellerListings(res.data.sellerListings || [])
       setActiveImage(p.image_url || p.images?.[0] || null)
 
+      // Save to Recently Viewed in localStorage
+      saveRecentlyViewed(p)
+
       // Fetch category related items
       const rel = await api.get(`/marketplace?category=${encodeURIComponent(p.category)}`)
       setRelated((rel.data.products || []).filter(item => item.id !== p.id).slice(0, 4))
@@ -62,6 +66,29 @@ export default function MarketplaceDetail() {
       setProduct(null)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const saveRecentlyViewed = (item) => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('cc_recently_viewed_mkt') || '[]')
+      const updated = [item, ...saved.filter(i => i.id !== item.id)].slice(0, 6)
+      localStorage.setItem('cc_recently_viewed_mkt', JSON.stringify(updated))
+    } catch {}
+  }
+
+  const handleToggleSold = async () => {
+    if (!product) return
+    setTogglingSold(true)
+    try {
+      const updatedStatus = !product.is_sold
+      await api.put(`/marketplace/${product.id}`, { is_sold: updatedStatus })
+      setProduct(prev => ({ ...prev, is_sold: updatedStatus }))
+      toast.success(updatedStatus ? 'Item marked as Sold' : 'Item marked as Available')
+    } catch {
+      toast.error('Failed to update status')
+    } finally {
+      setTogglingSold(false)
     }
   }
 
@@ -128,13 +155,13 @@ export default function MarketplaceDetail() {
 
         {/* Left Column: Image Gallery */}
         <div>
-          <div style={{
+          <div className="glass-card" style={{
             borderRadius: 'var(--radius-xl)',
             overflow: 'hidden',
             background: 'var(--bg-surface)',
             height: '380px',
             position: 'relative',
-            border: '1px solid var(--border)'
+            border: '1px solid var(--border-strong)'
           }}>
             {activeImage ? (
               <img src={activeImage} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -190,11 +217,13 @@ export default function MarketplaceDetail() {
           </div>
 
           {/* Pricing Box */}
-          <div className="card" style={{ padding: 'var(--space-4)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between' }}>
+          <div className="card glass-card p-4">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div className="text-xs text-muted">Asking Price</div>
-                <span className="price" style={{ fontSize: '2.2rem' }}>₹{Number(product.price).toLocaleString()}</span>
+                <span className="price" style={{ fontSize: '2.2rem', color: 'var(--primary)', fontWeight: 800 }}>
+                  PKR {Number(product.price).toLocaleString()}
+                </span>
               </div>
               <span className="badge badge-muted">Hostel / Campus Pickup</span>
             </div>
@@ -208,22 +237,24 @@ export default function MarketplaceDetail() {
             <p style={{ fontSize: '0.9rem', lineHeight: 1.8, color: 'var(--text-secondary)' }}>{product.description}</p>
           </div>
 
-          {/* Rich Seller Profile Card */}
-          <div style={{ padding: 'var(--space-4)', background: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+          {/* Rich Seller Profile & Reputation Card */}
+          <div className="card glass-card p-4" style={{ background: 'var(--bg-surface)' }}>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '8px' }}>
-              CAMPUS SELLER PROFILE
+              CAMPUS SELLER REPUTATION
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div className="avatar" style={{ width: 44, height: 44, fontSize: '1.1rem', background: 'linear-gradient(135deg,#10b981,#6366f1)' }}>
-                {product.seller_name?.[0]}
+              <div className="avatar" style={{ width: 44, height: 44, fontSize: '1.1rem', background: 'linear-gradient(135deg,#10b981,#6366f1)', borderRadius: 'var(--radius-full)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>
+                {product.seller_name?.[0] || 'S'}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700 }} className="flex items-center gap-2">
                   {product.seller_name}
                   <ShieldCheck size={14} style={{ color: 'var(--primary)' }} />
                 </div>
-                <div className="text-xs text-muted">
-                  {product.seller_department || 'Student'} • ID: {product.seller_student_id || '2026'}
+                <div className="text-xs text-muted flex items-center gap-2 mt-0.5">
+                  <span>{product.seller_department || 'Computer Science'}</span>
+                  <span>•</span>
+                  <span className="text-primary font-semibold">Fast Responder ⚡</span>
                 </div>
               </div>
             </div>
@@ -233,11 +264,14 @@ export default function MarketplaceDetail() {
           <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
             {isOwner ? (
               <>
-                <button className="btn btn-outline flex-1" onClick={() => setEditing(true)}>
-                  <Edit size={14} /> Edit Listing
+                <button className="btn btn-primary flex-1" onClick={handleToggleSold} disabled={togglingSold}>
+                  <CheckCircle size={14} /> {product.is_sold ? 'Mark Available' : 'Mark as Sold'}
                 </button>
-                <button className="btn btn-danger flex-1" onClick={() => setShowConfirmDelete(true)} disabled={deleting}>
-                  <Trash2 size={14} /> Delete
+                <button className="btn btn-outline flex-1" onClick={() => setEditing(true)}>
+                  <Edit size={14} /> Edit
+                </button>
+                <button className="btn btn-danger btn-icon" onClick={() => setShowConfirmDelete(true)} disabled={deleting}>
+                  <Trash2 size={14} />
                 </button>
               </>
             ) : (
@@ -265,7 +299,7 @@ export default function MarketplaceDetail() {
           </h3>
           <div className="grid-auto-sm">
             {sellerListings.map(item => (
-              <Link key={item.id} to={`/marketplace/${item.id}`} className="card card-hover product-card" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Link key={item.id} to={`/marketplace/${item.id}`} className="card card-hover product-card glass-card" style={{ textDecoration: 'none', color: 'inherit' }}>
                 <div className="product-img" style={{ height: '140px' }}>
                   {item.image_url
                     ? <img src={item.image_url} alt={item.title} className="img-cover" />
@@ -273,9 +307,9 @@ export default function MarketplaceDetail() {
                   }
                   <span className={`badge product-condition-badge ${getConditionColor(item.condition)}`}>{item.condition}</span>
                 </div>
-                <div className="product-body">
+                <div className="product-body p-3">
                   <h4 className="product-title" style={{ fontSize: '0.85rem' }}>{item.title}</h4>
-                  <div className="price" style={{ fontSize: '0.95rem' }}>₹{Number(item.price).toLocaleString()}</div>
+                  <div className="price" style={{ fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 700 }}>PKR {Number(item.price).toLocaleString()}</div>
                 </div>
               </Link>
             ))}
@@ -291,7 +325,7 @@ export default function MarketplaceDetail() {
           </h3>
           <div className="grid-auto-sm">
             {related.map(p => (
-              <Link key={p.id} to={`/marketplace/${p.id}`} className="card card-hover product-card" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Link key={p.id} to={`/marketplace/${p.id}`} className="card card-hover product-card glass-card" style={{ textDecoration: 'none', color: 'inherit' }}>
                 <div className="product-img" style={{ height: '140px' }}>
                   {p.image_url
                     ? <img src={p.image_url} alt={p.title} className="img-cover" />
@@ -299,9 +333,9 @@ export default function MarketplaceDetail() {
                   }
                   <span className={`badge product-condition-badge ${getConditionColor(p.condition)}`}>{p.condition}</span>
                 </div>
-                <div className="product-body">
+                <div className="product-body p-3">
                   <h4 className="product-title" style={{ fontSize: '0.85rem' }}>{p.title}</h4>
-                  <div className="price" style={{ fontSize: '0.95rem' }}>₹{Number(p.price).toLocaleString()}</div>
+                  <div className="price" style={{ fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 700 }}>PKR {Number(p.price).toLocaleString()}</div>
                 </div>
               </Link>
             ))}

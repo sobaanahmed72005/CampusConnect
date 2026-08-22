@@ -1,0 +1,15 @@
+# CampusConnect Search Engine Robots Configuration
+User-agent: *
+Allow: /
+Allow: /landing
+Allow: /login
+Allow: /register
+
+# Disallow private user & admin dashboard routes from crawling
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /notifications/
+Disallow: /api/
+
+Sitemap: https://campusconnect.nu.edu.pk/sitemap.xml

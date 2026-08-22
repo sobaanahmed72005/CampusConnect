@@ -23,6 +23,7 @@ const MarketplaceDetail = lazy(() => import('./pages/MarketplaceDetail'))
 const LostFound = lazy(() => import('./pages/LostFound'))
 const Accommodation = lazy(() => import('./pages/Accommodation'))
 const AccommodationDetail = lazy(() => import('./pages/AccommodationDetail'))
+const AcademicsHub = lazy(() => import('./pages/AcademicsHub'))
 const Timetable = lazy(() => import('./pages/Timetable'))
 const Assignments = lazy(() => import('./pages/Assignments'))
 const Attendance = lazy(() => import('./pages/Attendance'))
@@ -33,11 +34,17 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'))
 const AdminEvents = lazy(() => import('./pages/admin/AdminEvents'))
 const AdminMarketplace = lazy(() => import('./pages/admin/AdminMarketplace'))
+const AdminMarketplaceReports = lazy(() => import('./pages/admin/AdminMarketplaceReports'))
 const AdminAuditLogs = lazy(() => import('./pages/admin/AdminAuditLogs'))
 const AdminLostFound = lazy(() => import('./pages/admin/AdminLostFound'))
 const AdminAccommodation = lazy(() => import('./pages/admin/AdminAccommodation'))
 const AdminAnnouncements = lazy(() => import('./pages/admin/AdminAnnouncements'))
+const AdminTelemetryDashboard = lazy(() => import('./pages/admin/AdminTelemetryDashboard'))
+const AdminBackups = lazy(() => import('./pages/admin/AdminBackups'))
+const AdminDataExports = lazy(() => import('./pages/admin/AdminDataExports'))
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
+
+
 
 const NotFound = lazy(() => import('./pages/NotFound'))
 const Forbidden = lazy(() => import('./pages/Forbidden'))
@@ -98,6 +105,7 @@ export default function App() {
                 <Route path="lost-found" element={<LostFound />} />
                 <Route path="accommodation" element={<Accommodation />} />
                 <Route path="accommodation/:id" element={<AccommodationDetail />} />
+                <Route path="academics" element={<AcademicsHub />} />
                 <Route path="timetable" element={<Timetable />} />
                 <Route path="assignments" element={<Assignments />} />
                 <Route path="attendance" element={<Attendance />} />
@@ -113,7 +121,13 @@ export default function App() {
                 <Route path="announcements" element={<AdminAnnouncements />} />
                 <Route path="events" element={<AdminEvents />} />
                 <Route path="marketplace" element={<AdminMarketplace />} />
+                <Route path="marketplace-reports" element={<AdminMarketplaceReports />} />
+                <Route path="telemetry" element={<AdminTelemetryDashboard />} />
+                <Route path="backups" element={<AdminBackups />} />
+                <Route path="exports" element={<AdminDataExports />} />
                 <Route path="lost-found" element={<AdminLostFound />} />
+
+
                 <Route path="accommodation" element={<AdminAccommodation />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>

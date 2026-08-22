@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../lib/api'
-import { CheckSquare, Plus, Clock, AlertTriangle, CheckCircle2, Trash2, X, Award, Sparkles } from 'lucide-react'
+import { CheckSquare, Plus, Clock, AlertTriangle, CheckCircle2, Trash2, X, GraduationCap, Calendar, BarChart3, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import PageHeader from '../components/ui/PageHeader'
 import LoadingGrid from '../components/ui/LoadingGrid'
 import EmptyState from '../components/ui/EmptyState'
-
-const PRIORITIES = ['all', 'high', 'medium', 'low']
-const STATUSES = ['all', 'pending', 'completed']
 
 export default function Assignments() {
   const [assignments, setAssignments] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
   const [showForm, setShowForm] = useState(false)
+  const [title, setTitle] = useState('')
+  const [course, setCourse] = useState('')
+  const [dueDate, setDueDate] = useState('')
+  const [priority, setPriority] = useState('medium')
 
   useEffect(() => { fetchAssignments() }, [statusFilter])
 
@@ -23,6 +25,27 @@ export default function Assignments() {
       const res = await api.get(`/academic/assignments?status=${statusFilter}`)
       setAssignments(res.data.assignments || [])
     } catch { setAssignments([]) } finally { setLoading(false) }
+  }
+
+  const handleAddAssignment = async (e) => {
+    e.preventDefault()
+    if (!title.trim()) return
+    try {
+      const res = await api.post('/academic/assignments', {
+        title,
+        course_name: course,
+        due_date: dueDate,
+        priority
+      })
+      setAssignments(prev => [...prev, res.data.assignment || res.data.item])
+      toast.success('Assignment deadline created!')
+      setShowForm(false)
+      setTitle('')
+      setCourse('')
+      setDueDate('')
+    } catch {
+      toast.error('Failed to create assignment')
+    }
   }
 
   const toggleStatus = async (id, currentStatus) => {
@@ -50,178 +73,142 @@ export default function Assignments() {
         subtitle="Track upcoming homework, lab submissions, project deadlines, and grades"
         iconColor="var(--accent)"
         action={
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-            <Plus size={16} /> New Assignment
-          </button>
+          <div className="flex items-center gap-2">
+            <Link to="/academics" className="btn btn-outline btn-sm">
+              <ArrowLeft size={14} /> Back to Academics Hub
+            </Link>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
+              <Plus size={14} /> New Assignment
+            </button>
+          </div>
         }
       />
 
-      {/* Tabs Filter */}
+      {/* Subsystem Navigation Tabs with Academics Hub direct link */}
       <div className="tabs mb-6">
-        {[
-          { id: 'all', name: 'All Assignments' },
-          { id: 'pending', name: 'Pending' },
-          { id: 'completed', name: 'Completed' }
-        ].map(t => (
+        <Link to="/academics" className="tab">
+          <GraduationCap size={15} /> Academics Hub
+        </Link>
+        <Link to="/timetable" className="tab">
+          <Calendar size={15} /> Weekly Timetable
+        </Link>
+        <button className="tab active">
+          <CheckSquare size={15} /> Assignments & Deadlines
+        </button>
+        <Link to="/attendance" className="tab">
+          <BarChart3 size={15} /> Attendance Tracker
+        </Link>
+      </div>
+
+      {/* Status Filter Pills */}
+      <div className="flex items-center gap-2 mb-6">
+        {['all', 'pending', 'completed'].map(st => (
           <button
-            key={t.id}
-            className={`tab ${statusFilter === t.id ? 'active' : ''}`}
-            onClick={() => setStatusFilter(t.id)}
+            key={st}
+            onClick={() => setStatusFilter(st)}
+            className={`btn btn-xs ${statusFilter === st ? 'btn-primary' : 'btn-ghost'}`}
+            style={{ borderRadius: 'var(--radius-full)', padding: '6px 14px', textTransform: 'capitalize' }}
           >
-            {t.name}
+            {st} Tasks
           </button>
         ))}
       </div>
 
       {loading ? (
-        <LoadingGrid count={4} height="160px" gridClass="grid-2" />
+        <LoadingGrid count={3} height="140px" label="Loading assignment deadlines..." />
       ) : assignments.length === 0 ? (
         <EmptyState
           icon={CheckSquare}
-          title={`No ${statusFilter === 'all' ? '' : statusFilter} assignments found`}
-          description="Keep up the great work or add a new course deadline!"
+          title="No assignments found"
+          description="Great job! You have no pending assignments or course deadlines."
           action={
             <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-              <Plus size={16} /> Add Assignment
+              <Plus size={16} /> New Assignment
             </button>
           }
         />
       ) : (
-        <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
-          {assignments.map(a => {
-            const isCompleted = a.status === 'completed'
-            const isOverdue = !isCompleted && new Date(a.due_date) < new Date()
+        <div className="flex flex-col gap-3">
+          {assignments.map(item => {
+            const isDone = item.status === 'completed'
             return (
-              <div
-                key={a.id}
-                className="card card-hover"
-                style={{
-                  padding: 'var(--space-4)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                  opacity: isCompleted ? 0.75 : 1
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="badge badge-muted text-xs font-semibold">{a.subject}</span>
-                  <div className="flex items-center gap-2">
-                    <span className={`badge ${a.priority === 'high' ? 'badge-danger' : a.priority === 'medium' ? 'badge-warning' : 'badge-primary'} text-xs`}>
-                      {a.priority} priority
-                    </span>
-                    {a.grade && <span className="badge badge-accent text-xs flex items-center gap-1"><Award size={11} /> Grade: {a.grade}</span>}
+              <div key={item.id} className="card glass-card p-4 flex items-center justify-between gap-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', opacity: isDone ? 0.75 : 1 }}>
+                <div className="flex items-center gap-3" style={{ flex: 1, minWidth: 0 }}>
+                  <button className={`btn btn-icon btn-sm ${isDone ? 'btn-success' : 'btn-outline'}`} onClick={() => toggleStatus(item.id, item.status)}>
+                    <CheckCircle2 size={16} />
+                  </button>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`font-bold text-sm ${isDone ? 'line-through text-muted' : ''}`}>{item.title}</span>
+                      {item.course_name && <span className="badge badge-accent text-xs">{item.course_name}</span>}
+                      {item.priority === 'high' && <span className="badge badge-danger text-xs">High Priority</span>}
+                    </div>
+                    {item.due_date && (
+                      <div className="text-xs text-muted mt-1 flex items-center gap-1">
+                        <Clock size={12} /> Due: {new Date(item.due_date).toLocaleDateString()}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <button
-                    onClick={() => toggleStatus(a.id, a.status)}
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: 2,
-                      color: isCompleted ? 'var(--primary)' : 'var(--text-muted)'
-                    }}
-                    title={isCompleted ? 'Mark as pending' : 'Mark as completed'}
-                  >
-                    <CheckCircle2 size={20} style={{ fill: isCompleted ? 'var(--primary-100)' : 'transparent' }} />
-                  </button>
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ fontSize: '1rem', fontWeight: 700, textDecoration: isCompleted ? 'line-through' : 'none' }}>
-                      {a.title}
-                    </h4>
-                    {a.description && <p className="text-xs text-muted mt-1">{a.description}</p>}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid var(--border)' }}>
-                  <span className={`text-xs flex items-center gap-1 font-semibold ${isOverdue ? 'text-danger' : 'text-muted'}`}>
-                    <Clock size={12} /> {isOverdue ? '⚠️ Overdue: ' : 'Due: '} {new Date(a.due_date).toLocaleDateString()}
-                  </span>
-                  <button
-                    className="btn btn-ghost btn-icon btn-sm"
-                    onClick={() => deleteAssignment(a.id)}
-                    style={{ color: 'var(--danger)', padding: 4 }}
-                    title="Delete assignment"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
+                <button className="btn btn-ghost btn-icon btn-sm text-danger" onClick={() => deleteAssignment(item.id)} title="Delete assignment">
+                  <Trash2 size={14} />
+                </button>
               </div>
             )
           })}
         </div>
       )}
 
-      {showForm && <AssignmentForm onClose={() => setShowForm(false)} onSuccess={() => { setShowForm(false); fetchAssignments() }} />}
-    </div>
-  )
-}
-
-function AssignmentForm({ onClose, onSuccess }) {
-  const [form, setForm] = useState({
-    title: '', subject: '', description: '', due_date: new Date().toISOString().split('T')[0], priority: 'medium', grade: ''
-  })
-  const [loading, setLoading] = useState(false)
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!form.title.trim()) return toast.error('Title is required')
-    setLoading(true)
-    try {
-      await api.post('/academic/assignments', form)
-      toast.success('Assignment added!')
-      onSuccess()
-    } catch { toast.error('Failed to add assignment') } finally { setLoading(false) }
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px' }}>
-        <div className="modal-header">
-          <h3>Add New Assignment</h3>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18} /></button>
+      {/* Add Assignment Modal */}
+      {showForm && (
+        <div className="modal-overlay animate-fade" onClick={() => setShowForm(false)}>
+          <div className="modal glass-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px', padding: 'var(--space-6)' }}>
+            <h3 className="font-bold text-base mb-4">Add Course Assignment Deadline</h3>
+            <form onSubmit={handleAddAssignment} className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-semibold mb-1 block">Assignment Title</label>
+                <input
+                  type="text"
+                  className="form-input text-xs"
+                  placeholder="e.g. Lab 4 Data Structures Report"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold mb-1 block">Course Name</label>
+                  <input
+                    type="text"
+                    className="form-input text-xs"
+                    placeholder="e.g. CS301"
+                    value={course}
+                    onChange={e => setCourse(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold mb-1 block">Priority Level</label>
+                  <select className="form-select text-xs" value={priority} onChange={e => setPriority(e.target.value)}>
+                    <option value="high">High Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="low">Low Priority</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold mb-1 block">Due Date</label>
+                <input type="date" className="form-input text-xs" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+              </div>
+              <div className="flex justify-end gap-2 mt-2">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary btn-sm">Add Deadline</button>
+              </div>
+            </form>
+          </div>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Assignment Title *</label>
-            <input className="form-input" placeholder="e.g. B-Tree & Hash Index Implementation" value={form.title} onChange={e => set('title', e.target.value)} required />
-          </div>
-          <div className="grid-2" style={{ gap: '12px' }}>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Course / Subject</label>
-              <input className="form-input" placeholder="e.g. Database Systems" value={form.subject} onChange={e => set('subject', e.target.value)} />
-            </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Priority</label>
-              <select className="form-input form-select" value={form.priority} onChange={e => set('priority', e.target.value)}>
-                <option value="high">🔴 High</option>
-                <option value="medium">🟡 Medium</option>
-                <option value="low">🟢 Low</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid-2" style={{ gap: '12px', marginTop: '12px' }}>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Due Date *</label>
-              <input className="form-input" type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} required />
-            </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Grade (optional)</label>
-              <input className="form-input" placeholder="e.g. A+" value={form.grade} onChange={e => set('grade', e.target.value)} />
-            </div>
-          </div>
-          <div className="form-group mt-2">
-            <label className="form-label">Instructions / Description</label>
-            <textarea className="form-input" rows={2} placeholder="Add submission guidelines..." value={form.description} onChange={e => set('description', e.target.value)} />
-          </div>
-          <div className="flex gap-3 mt-6">
-            <button type="button" className="btn btn-outline flex-1" onClick={onClose}>Cancel</button>
-            <button type="submit" className={`btn btn-primary flex-1 ${loading ? 'btn-loading' : ''}`} disabled={loading}>
-              {loading ? <div className="spinner" /> : 'Save Assignment'}
-            </button>
-          </div>
-        </form>
-      </div>
+      )}
     </div>
   )
 }

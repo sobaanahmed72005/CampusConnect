@@ -228,6 +228,35 @@
           "403": { "description": "Forbidden - Non-participant request rejected" }
         }
       }
+    },
+    "/marketplace/favorites": {
+      "get": {
+        "summary": "Fetch Student Favorited Marketplace Listings",
+        "responses": { "200": { "description": "Paginated list of favorited products" } }
+      }
+    },
+    "/marketplace/{id}/favorite": {
+      "post": {
+        "summary": "Toggle Marketplace Listing Favorite Status",
+        "responses": { "200": { "description": "Listing favorited or unfavorited" } }
+      },
+      "delete": {
+        "summary": "Remove Listing from Favorites",
+        "responses": { "200": { "description": "Listing removed from student favorites" } }
+      }
+    },
+    "/admin/marketplace-reports": {
+      "get": {
+        "summary": "Fetch Marketplace Abuse Reports",
+        "responses": { "200": { "description": "List of reported marketplace listings" } }
+      }
+    },
+    "/admin/marketplace-reports/{id}": {
+      "patch": {
+        "summary": "Update Moderation Report Status or Takedown Listing",
+        "responses": { "200": { "description": "Report status updated and audit log recorded" } }
+      }
     }
   }
 }
+

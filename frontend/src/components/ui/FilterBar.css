@@ -1,0 +1,179 @@
+/* Modern Vercel / Linear Inspired 2-Tier Filter Bar */
+.modern-filter-bar {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 14px 18px;
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Top Tier: Search Box & Actions */
+.filter-bar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+}
+
+/* Search Box */
+.filter-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 220px;
+}
+
+.filter-search-icon {
+  position: absolute;
+  left: 14px;
+  color: #64748b;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.filter-search-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 32px 0 38px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px !important;
+  color: #f8fafc !important;
+  font-size: 0.85rem !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.filter-search-input:focus {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+}
+
+.filter-search-clear {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.filter-search-clear:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Actions Group (Right) */
+.filter-bar-extra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.filter-bar-extra select,
+.filter-bar-extra .form-select {
+  height: 40px !important;
+  padding: 0 30px 0 12px !important;
+  border-radius: 10px !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+  cursor: pointer !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.filter-bar-extra select:hover,
+.filter-bar-extra .form-select:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+.filter-bar-extra .btn {
+  height: 40px !important;
+  border-radius: 10px !important;
+  font-size: 0.82rem !important;
+}
+
+/* Divider Line */
+.filter-bar-divider {
+  height: 1px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Bottom Tier: Category Chips Track */
+.filter-pills-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.filter-pill-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #94a3b8;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-pill-btn:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.filter-pill-btn.active {
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.4);
+  font-weight: 600;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .filter-bar-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-search-box {
+    max-width: 100%;
+    width: 100%;
+  }
+  .filter-bar-extra {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+}

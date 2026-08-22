@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import api from '../../lib/api'
-import { X, Phone, Edit, Trash2, ShoppingBag, ShieldCheck, Flag, MapPin, Eye } from 'lucide-react'
+import { X, Phone, Edit, Trash2, ShoppingBag, ShieldCheck, Flag, MapPin, Eye, MessageSquare } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import MarketplaceForm from './MarketplaceForm'
 import ConfirmModal from '../ui/ConfirmModal'
 import ReportModal from './ReportModal'
 import ContactModal from './ContactModal'
+import MessagingDrawer from '../messaging/MessagingDrawer'
 
 export default function ProductModal({ product, onClose, onUpdate }) {
   const { user } = useAuth()
@@ -15,9 +16,35 @@ export default function ProductModal({ product, onClose, onUpdate }) {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [showContact, setShowContact] = useState(false)
+  const [messagingOpen, setMessagingOpen] = useState(false)
+  const [activeConvId, setActiveConvId] = useState(null)
+  const [startingChat, setStartingChat] = useState(false)
   const [activeImage, setActiveImage] = useState(product.image_url || product.images?.[0] || null)
 
   const isOwner = user?.id === product.seller_id
+
+  const handleStartMessage = async () => {
+    if (!user) {
+      toast.error('Please log in to message sellers')
+      return
+    }
+    if (isOwner) {
+      toast.error('You cannot message yourself on your own listing')
+      return
+    }
+
+    setStartingChat(true)
+    try {
+      const res = await api.post('/messages/conversations', { listing_id: product.id })
+      setActiveConvId(res.data.conversation.id)
+      setMessagingOpen(true)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to start conversation')
+    } finally {
+      setStartingChat(false)
+    }
+  }
+
 
   const handleDelete = async () => {
     setDeleting(true)
@@ -146,8 +173,11 @@ export default function ProductModal({ product, onClose, onUpdate }) {
                   </>
                 ) : (
                   <>
-                    <button className="btn btn-primary flex-1" onClick={() => setShowContact(true)}>
-                      <Phone size={14} /> Contact Seller
+                    <button className="btn btn-primary flex-1" onClick={handleStartMessage} disabled={startingChat}>
+                      <MessageSquare size={14} /> {startingChat ? 'Connecting...' : 'Message Seller'}
+                    </button>
+                    <button className="btn btn-outline" onClick={() => setShowContact(true)}>
+                      <Phone size={14} /> Contact Details
                     </button>
                     <button className="btn btn-ghost btn-icon" onClick={() => setShowReport(true)} title="Report Listing">
                       <Flag size={14} style={{ color: 'var(--danger)' }} />
@@ -180,6 +210,15 @@ export default function ProductModal({ product, onClose, onUpdate }) {
       {showContact && (
         <ContactModal product={product} onClose={() => setShowContact(false)} />
       )}
+
+      {messagingOpen && (
+        <MessagingDrawer
+          isOpen={messagingOpen}
+          onClose={() => setMessagingOpen(false)}
+          activeConversationId={activeConvId}
+        />
+      )}
     </>
   )
 }
+
