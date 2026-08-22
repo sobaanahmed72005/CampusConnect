@@ -9,7 +9,8 @@ import {
 import SectionCard from '../components/ui/SectionCard'
 import EmptyState from '../components/ui/EmptyState'
 import AnnouncementModal from '../components/announcements/AnnouncementModal'
-import OnboardingModal from '../components/ui/OnboardingModal'
+import StudentOnboardingWizard from '../components/ui/StudentOnboardingWizard'
+import ContextualGuideBanner from '../components/ui/ContextualGuideBanner'
 import OptimizedImage from '../components/ui/OptimizedImage'
 import './Dashboard.css'
 
@@ -380,7 +381,7 @@ export default function Dashboard() {
       )}
 
       {showOnboarding && (
-        <OnboardingModal
+        <StudentOnboardingWizard
           onClose={() => setShowOnboarding(false)}
         />
       )}

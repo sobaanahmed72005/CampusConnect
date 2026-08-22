@@ -12,6 +12,7 @@ import ErrorState from '../components/ui/ErrorState'
 import ConfirmModal from '../components/ui/ConfirmModal'
 import MarketplaceForm from '../components/marketplace/MarketplaceForm'
 import ProductModal from '../components/marketplace/ProductModal'
+import ContextualGuideBanner from '../components/ui/ContextualGuideBanner'
 import OptimizedImage from '../components/ui/OptimizedImage'
 import Pagination from '../components/ui/Pagination'
 import { useDebounce } from '../hooks/useDebounce'
@@ -212,6 +213,15 @@ export default function Marketplace() {
             <Plus size={16} /> List an Item
           </button>
         }
+      />
+
+      <ContextualGuideBanner
+        id="marketplace"
+        title="Marketplace Trading Pro-Tip"
+        message="Meet in well-lit public campus spots (e.g. Student Center or Library Cafeteria). Verify @nu.edu.pk profiles before trading."
+        icon={ShieldCheck}
+        color="var(--accent)"
+        bg="var(--accent-50)"
       />
 
       {/* View Toggle Tabs */}
