@@ -73,10 +73,11 @@ api.interceptors.response.use(
 
     // Network connection or server timeout failure
     if (err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED') {
-      toast.error('Unable to connect to CampusConnect. Please check your network.')
+      toast.error('Unable to connect to CampusConnect. Please check your network.', { id: 'network-error-toast' })
     } else if (err.response?.status >= 500) {
+      // Deduplicate simultaneous background 500 toasts using single hot-toast ID
       const serverMsg = err.response?.data?.message
-      toast.error(serverMsg || 'CampusConnect server error. Please try again in a moment.')
+      toast.error(serverMsg || 'CampusConnect server error. Please try again in a moment.', { id: 'server-error-toast' })
     }
 
     return Promise.reject(err)

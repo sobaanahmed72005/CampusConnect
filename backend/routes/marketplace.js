@@ -57,9 +57,46 @@ router.get('/', authenticate, async (req, res) => {
       idx++
     }
 
-    // Count total matching items before pagination limit
-    const countSql = `SELECT COUNT(*) FROM (${sql}) as count_tbl`
-    const countResult = await query(countSql, params)
+    let countSql = `
+      SELECT COUNT(m.id)
+      FROM marketplace_listings m
+      JOIN users u ON u.id = m.seller_id
+      WHERE 1=1
+    `
+    const countParams = [userId]
+    let countIdx = 2
+
+    if (status === 'available') {
+      countSql += ` AND m.is_sold = false`
+    } else if (status === 'sold') {
+      countSql += ` AND m.is_sold = true`
+    } else if (!status) {
+      countSql += ` AND m.is_sold = false`
+    }
+
+    if (seller_id) {
+      countSql += ` AND m.seller_id = $${countIdx}`
+      countParams.push(seller_id)
+      countIdx++
+    }
+
+    if (q) {
+      countSql += ` AND (m.title ILIKE $${countIdx} OR m.description ILIKE $${countIdx} OR m.location ILIKE $${countIdx})`
+      countParams.push(`%${q}%`)
+      countIdx++
+    }
+    if (category && category !== 'All') {
+      countSql += ` AND m.category = $${countIdx}`
+      countParams.push(category)
+      countIdx++
+    }
+    if (condition && condition !== 'All') {
+      countSql += ` AND m.condition = $${countIdx}`
+      countParams.push(condition)
+      countIdx++
+    }
+
+    const countResult = await query(countSql, countParams)
     const total = parseInt(countResult.rows[0].count)
 
     // Sort order
