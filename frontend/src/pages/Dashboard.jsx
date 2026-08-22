@@ -11,6 +11,8 @@ import EmptyState from '../components/ui/EmptyState'
 import AnnouncementModal from '../components/announcements/AnnouncementModal'
 import StudentOnboardingWizard from '../components/ui/StudentOnboardingWizard'
 import ContextualGuideBanner from '../components/ui/ContextualGuideBanner'
+import TrendingCampusActivity from '../components/community/TrendingCampusActivity'
+import StudentDiscoveryModal from '../components/community/StudentDiscoveryModal'
 import OptimizedImage from '../components/ui/OptimizedImage'
 import './Dashboard.css'
 
@@ -23,6 +25,7 @@ export default function Dashboard() {
   const [announcements, setAnnouncements] = useState([])
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showDiscoveryModal, setShowDiscoveryModal] = useState(false)
   const [events, setEvents] = useState([])
   const [notifications, setNotifications] = useState([])
   const [products, setProducts] = useState([])
@@ -139,13 +142,21 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-          {user?.role === 'admin' && (
-            <button className="btn btn-accent btn-sm flex-shrink-0" onClick={() => setShowAnnouncementModal(true)}>
-              <Plus size={14} /> Create Notice
+          <div className="flex items-center gap-2 flex-wrap">
+            <button className="btn btn-outline btn-sm font-semibold" onClick={() => setShowDiscoveryModal(true)}>
+              <User size={14} /> Discover FASTians
             </button>
-          )}
+            {user?.role === 'admin' && (
+              <button className="btn btn-accent btn-sm flex-shrink-0" onClick={() => setShowAnnouncementModal(true)}>
+                <Plus size={14} /> Create Notice
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* REAL-TIME CAMPUS TICKER */}
+      <TrendingCampusActivity />
 
       {/* MAIN 2-COLUMN HUB GRID */}
       <div className="dashboard-grid">
@@ -383,6 +394,12 @@ export default function Dashboard() {
       {showOnboarding && (
         <StudentOnboardingWizard
           onClose={() => setShowOnboarding(false)}
+        />
+      )}
+
+      {showDiscoveryModal && (
+        <StudentDiscoveryModal
+          onClose={() => setShowDiscoveryModal(false)}
         />
       )}
     </div>
