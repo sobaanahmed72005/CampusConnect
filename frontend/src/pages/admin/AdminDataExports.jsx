@@ -36,7 +36,8 @@ export default function AdminDataExports() {
   }
 
   const handleDownload = (filename) => {
-    const downloadUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin/exports/${encodeURIComponent(filename)}/download`
+    const apiBase = import.meta.env.VITE_API_URL || '/api'
+    const downloadUrl = `${apiBase}/admin/exports/${encodeURIComponent(filename)}/download`
     window.open(downloadUrl, '_blank')
   }
 
