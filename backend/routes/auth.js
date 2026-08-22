@@ -8,7 +8,8 @@ const { query } = require('../config/database')
 const { authenticate } = require('../middleware/auth')
 const { loginLimiter, registerLimiter, forgotPasswordLimiter, resetPasswordLimiter } = require('../middleware/rateLimiter')
 
-const signToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' })
+const JWT_SECRET = process.env.JWT_SECRET || 'campusconnect_production_secure_fallback_jwt_secret_key_2026'
+const signToken = (id) => jwt.sign({ id }, JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' })
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -111,10 +112,18 @@ router.post('/login', loginLimiter, [
 
   try {
     const { email, password } = req.body
-    const result = await query('SELECT * FROM users WHERE email = $1 AND is_active = true', [email])
+    let result
+    try {
+      result = await query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [email])
+    } catch (e) {
+      result = await query('SELECT * FROM users WHERE email = $1', [email])
+    }
+
     if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid email or password' })
 
     const user = result.rows[0]
+    if (user.is_active === false) return res.status(401).json({ message: 'Account is deactivated' })
+
     const passHash = user.password || user.password_hash
     const valid = passHash ? await bcrypt.compare(password, passHash) : false
     if (!valid) return res.status(401).json({ message: 'Invalid email or password' })
@@ -136,7 +145,7 @@ router.post('/login', loginLimiter, [
     res.json({ token, user: safeUser })
   } catch (err) {
     console.error('Login error:', err)
-    res.status(500).json({ message: 'Login failed' })
+    res.status(500).json({ message: err.message || 'Login failed' })
   }
 })
 
