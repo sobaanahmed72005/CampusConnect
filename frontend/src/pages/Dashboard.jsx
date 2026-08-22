@@ -14,7 +14,6 @@ import ContextualGuideBanner from '../components/ui/ContextualGuideBanner'
 import TrendingCampusActivity from '../components/community/TrendingCampusActivity'
 import StudentDiscoveryModal from '../components/community/StudentDiscoveryModal'
 import PersonalizedFeedWidget from '../components/personalization/PersonalizedFeedWidget'
-import AcademicHealthWidget from '../components/academics/AcademicHealthWidget'
 import OptimizedImage from '../components/ui/OptimizedImage'
 import './Dashboard.css'
 
@@ -168,9 +167,6 @@ export default function Dashboard() {
 
         {/* LEFT COLUMN: Classes, Events & Marketplace */}
         <div className="flex flex-col gap-6">
-
-          {/* ACADEMIC HEALTH COMMAND CENTER */}
-          <AcademicHealthWidget />
 
           {/* Today's Class Schedule Widget */}
           <SectionCard

@@ -71,14 +71,14 @@ export default function Landing() {
         </div>
         <div className="hero-content animate-slide-up">
           <div className="hero-badge" style={{ background: 'rgba(16, 185, 129, 0.12)', color: 'var(--primary)', border: '1px solid var(--border-primary)' }}>
-            <GraduationCap size={14} /> Official FAST NUCES Student Ecosystem
+            <GraduationCap size={14} /> Student-Controlled Campus Platform
           </div>
           <h1 className="hero-title">
-            Empowering FASTians<br />
+            Empowering Students<br />
             <span className="hero-gradient">Across All Campuses</span>
           </h1>
           <p className="hero-desc">
-            The unified digital platform for FAST NUCES students (CFD, LHR, ISB, KHI, PWR). Trade textbooks, find hostels near campus, track lost items, check class schedules, and join society workshops with verified <strong>@nu.edu.pk</strong> access.
+            The independent digital platform for students. Trade textbooks on the marketplace, find student accommodation, track lost items, organize society activities, and manage your personal schedule.
           </p>
           <div className="hero-actions">
             {user ? (

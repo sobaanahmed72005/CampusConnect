@@ -10,7 +10,7 @@ import './Sidebar.css'
 
 const studentNav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/academics', icon: BookOpen, label: 'Academics' },
+  { to: '/academics', icon: BookOpen, label: 'Personal Planner' },
   { to: '/events', icon: Calendar, label: 'Events' },
   { to: '/marketplace', icon: ShoppingBag, label: 'Marketplace' },
   { to: '/lost-found', icon: Search, label: 'Lost & Found' },

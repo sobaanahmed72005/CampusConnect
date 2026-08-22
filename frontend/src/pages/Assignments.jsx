@@ -69,25 +69,25 @@ export default function Assignments() {
     <div className="animate-fade">
       <PageHeader
         icon={CheckSquare}
-        title="Assignments & Course Deadlines"
-        subtitle="Track upcoming homework, lab submissions, project deadlines, and grades"
+        title="Student Task & Deadline Planner"
+        subtitle="Self-managed student tracker for tasks, project milestones, and upcoming deadlines"
         iconColor="var(--accent)"
         action={
           <div className="flex items-center gap-2">
             <Link to="/academics" className="btn btn-outline btn-sm">
-              <ArrowLeft size={14} /> Back to Academics Hub
+              <ArrowLeft size={14} /> Back to Personal Planner
             </Link>
             <button className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
-              <Plus size={14} /> New Assignment
+              <Plus size={14} /> New Task
             </button>
           </div>
         }
       />
 
-      {/* Subsystem Navigation Tabs with Academics Hub direct link */}
+      {/* Subsystem Navigation Tabs */}
       <div className="tabs mb-6">
         <Link to="/academics" className="tab">
-          <GraduationCap size={15} /> Academics Hub
+          <GraduationCap size={15} /> Personal Planner
         </Link>
         <Link to="/timetable" className="tab">
           <Calendar size={15} /> Weekly Timetable

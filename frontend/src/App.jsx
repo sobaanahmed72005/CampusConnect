@@ -26,7 +26,6 @@ const AccommodationDetail = lazy(() => import('./pages/AccommodationDetail'))
 const AcademicsHub = lazy(() => import('./pages/AcademicsHub'))
 const Timetable = lazy(() => import('./pages/Timetable'))
 const Assignments = lazy(() => import('./pages/Assignments'))
-const Attendance = lazy(() => import('./pages/Attendance'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 
@@ -108,7 +107,6 @@ export default function App() {
                 <Route path="academics" element={<AcademicsHub />} />
                 <Route path="timetable" element={<Timetable />} />
                 <Route path="assignments" element={<Assignments />} />
-                <Route path="attendance" element={<Attendance />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="notifications" element={<Notifications />} />
               </Route>

@@ -76,34 +76,31 @@ export default function Timetable() {
     <div className="animate-fade">
       <PageHeader
         icon={CalendarIcon}
-        title="Weekly Timetable & Schedule"
-        subtitle="Manage your weekly lecture schedule, room locations, and course instructors"
+        title="Personal Schedule Planner"
+        subtitle="Manage your weekly lecture schedule, room locations, study sessions, and daily slots"
         iconColor="var(--primary)"
         action={
           <div className="flex items-center gap-2">
             <Link to="/academics" className="btn btn-outline btn-sm">
-              <ArrowLeft size={14} /> Back to Academics Hub
+              <ArrowLeft size={14} /> Back to Personal Planner
             </Link>
             <button className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
-              <Plus size={14} /> Add Class Slot
+              <Plus size={14} /> Add Schedule Slot
             </button>
           </div>
         }
       />
 
-      {/* Subsystem Navigation Tabs with Academics Hub direct link */}
+      {/* Subsystem Navigation Tabs */}
       <div className="tabs mb-6">
         <Link to="/academics" className="tab">
-          <GraduationCap size={15} /> Academics Hub
+          <GraduationCap size={15} /> Personal Planner
         </Link>
         <button className="tab active">
-          <CalendarIcon size={15} /> Weekly Timetable
+          <CalendarIcon size={15} /> My Schedule
         </button>
         <Link to="/assignments" className="tab">
-          <CheckSquare size={15} /> Assignments & Deadlines
-        </Link>
-        <Link to="/attendance" className="tab">
-          <BarChart3 size={15} /> Attendance Tracker
+          <CheckSquare size={15} /> Task Deadlines
         </Link>
       </div>
 

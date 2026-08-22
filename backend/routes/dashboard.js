@@ -9,18 +9,17 @@ router.use(authenticate)
 router.get('/stats', async (req, res) => {
   try {
     const userId = req.user.id
-    const [eventsJoined, notifications] = await Promise.all([
+    const [eventsJoined, notifications, activeTasks, activeListings] = await Promise.all([
       query('SELECT COUNT(*) FROM event_registrations WHERE user_id = $1', [userId]),
       query('SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = false', [userId]),
+      query("SELECT COUNT(*) FROM assignments WHERE user_id = $1 AND status != 'completed'", [userId]).catch(() => ({ rows: [{ count: 0 }] })),
+      query('SELECT COUNT(*) FROM marketplace_listings WHERE seller_id = $1 AND is_sold = false', [userId]).catch(() => ({ rows: [{ count: 0 }] })),
     ])
     res.json({
       events_joined: eventsJoined.rows[0].count,
       unread_notifications: notifications.rows[0].count,
-      // Static data for demo purposes
-      attendance: '19/20',
-      courses: '6',
-      gpa: '3.8',
-      certificates: '4',
+      active_tasks: activeTasks.rows[0].count,
+      active_listings: activeListings.rows[0].count
     })
   } catch (err) {
     console.error(err)
@@ -31,10 +30,9 @@ router.get('/stats', async (req, res) => {
 // GET /api/dashboard/assignments
 router.get('/assignments', async (req, res) => {
   try {
-    // Check if assignments table has user_id column
     const result = await query(
-      'SELECT * FROM assignments WHERE user_id = $1 AND status != $2 ORDER BY due_date ASC LIMIT 5',
-      [req.user.id, 'completed']
+      "SELECT * FROM assignments WHERE user_id = $1 AND status != 'completed' ORDER BY due_date ASC LIMIT 5",
+      [req.user.id]
     ).catch(() => ({ rows: [] }))
     res.json({ assignments: result.rows || [] })
   } catch (err) {
