@@ -13,6 +13,7 @@ import StudentOnboardingWizard from '../components/ui/StudentOnboardingWizard'
 import ContextualGuideBanner from '../components/ui/ContextualGuideBanner'
 import TrendingCampusActivity from '../components/community/TrendingCampusActivity'
 import StudentDiscoveryModal from '../components/community/StudentDiscoveryModal'
+import PersonalizedFeedWidget from '../components/personalization/PersonalizedFeedWidget'
 import OptimizedImage from '../components/ui/OptimizedImage'
 import './Dashboard.css'
 
@@ -157,6 +158,9 @@ export default function Dashboard() {
 
       {/* REAL-TIME CAMPUS TICKER */}
       <TrendingCampusActivity />
+
+      {/* DYNAMIC PERSONALIZED STUDENT FEED */}
+      <PersonalizedFeedWidget user={user} events={events} products={products} />
 
       {/* MAIN 2-COLUMN HUB GRID */}
       <div className="dashboard-grid">
