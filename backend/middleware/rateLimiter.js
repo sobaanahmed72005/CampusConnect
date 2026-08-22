@@ -44,11 +44,11 @@ function createRateLimiter({ windowMs = 15 * 60 * 1000, max = 100, message = 'To
   }
 }
 
-// 1. Strict rate limit for POST /api/auth/login (5 attempts / 15 minutes in production)
+// 1. Strict rate limit for POST /api/auth/login
 const loginLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: 'Too many authentication attempts. Please try again after 15 minutes.'
+  max: 50,
+  message: 'Too many login attempts, please try again in a few minutes.'
 })
 
 // 2. Strict rate limit for POST /api/auth/register (3 registrations / 1 hour in production)
