@@ -260,5 +260,117 @@ router.get('/overview', async (req, res) => {
   }
 })
 
+// ==========================================
+// GOOGLE CLASSROOM (GCR) INTEGRATION ROUTES
+// ==========================================
+
+const gcrSyncService = require('../services/gcrSyncService')
+
+// GET /api/academic/gcr/auth-url
+router.get('/gcr/auth-url', async (req, res) => {
+  try {
+    const authUrl = gcrSyncService.getOAuthUrl(req.user.id)
+    res.json({ authUrl })
+  } catch (err) {
+    console.error('Failed to generate GCR OAuth URL:', err)
+    res.status(500).json({ message: 'Failed to generate authorization URL' })
+  }
+})
+
+// GET /api/academic/gcr/callback
+router.get('/gcr/callback', async (req, res) => {
+  try {
+    const { code, state, error } = req.query
+    if (error) {
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://campusconnect.itnetwork.pk'}/academics?gcr_error=${encodeURIComponent(error)}`)
+    }
+
+    if (!code) {
+      return res.status(400).json({ message: 'Missing authorization code' })
+    }
+
+    const userId = state || req.user?.id
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized callback state' })
+    }
+
+    const tokenData = await gcrSyncService.exchangeCodeForTokens(code)
+    const googleUser = await gcrSyncService.fetchGoogleUserInfo(tokenData.access_token)
+
+    await gcrSyncService.saveUserGoogleTokens(userId, tokenData, googleUser)
+
+    // Trigger initial background sync
+    gcrSyncService.syncUserClassroom(userId).catch(e => console.error('Initial GCR sync background error:', e))
+
+    res.redirect(`${process.env.FRONTEND_URL || 'https://campusconnect.itnetwork.pk'}/academics?gcr=connected`)
+  } catch (err) {
+    console.error('GCR Callback Error:', err)
+    res.redirect(`${process.env.FRONTEND_URL || 'https://campusconnect.itnetwork.pk'}/academics?gcr_error=${encodeURIComponent(err.message)}`)
+  }
+})
+
+// GET /api/academic/gcr/status
+router.get('/gcr/status', async (req, res) => {
+  try {
+    const conn = await query(
+      'SELECT google_email, is_connected, last_synced_at FROM user_google_accounts WHERE user_id = $1',
+      [req.user.id]
+    )
+
+    if (conn.rows.length === 0 || !conn.rows[0].is_connected) {
+      return res.json({
+        isConnected: false,
+        googleEmail: null,
+        lastSyncedAt: null
+      })
+    }
+
+    res.json({
+      isConnected: true,
+      googleEmail: conn.rows[0].google_email,
+      lastSyncedAt: conn.rows[0].last_synced_at
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to fetch Google Classroom status' })
+  }
+})
+
+// POST /api/academic/gcr/sync
+router.post('/gcr/sync', async (req, res) => {
+  try {
+    const result = await gcrSyncService.syncUserClassroom(req.user.id)
+    res.json(result)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: err.message || 'Failed to sync Google Classroom data' })
+  }
+})
+
+// POST /api/academic/gcr/disconnect
+router.post('/gcr/disconnect', async (req, res) => {
+  try {
+    await gcrSyncService.disconnectUserClassroom(req.user.id)
+    res.json({ message: 'Google Classroom account disconnected successfully' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to disconnect Google Classroom' })
+  }
+})
+
+// GET /api/academic/courses
+router.get('/courses', async (req, res) => {
+  try {
+    const gcrRes = await query(
+      'SELECT * FROM gcr_courses WHERE user_id = $1 AND course_state = $2 ORDER BY name ASC',
+      [req.user.id, 'ACTIVE']
+    )
+    res.json({ courses: gcrRes.rows })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to load courses' })
+  }
+})
+
 module.exports = router
 

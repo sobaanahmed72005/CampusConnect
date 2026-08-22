@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../lib/api'
-import { CheckSquare, Plus, Clock, AlertTriangle, CheckCircle2, Trash2, X, GraduationCap, Calendar, BarChart3, ArrowLeft } from 'lucide-react'
+import { CheckSquare, Plus, Clock, AlertTriangle, CheckCircle2, Trash2, X, GraduationCap, Calendar, BarChart3, ArrowLeft, BookOpen } from 'lucide-react'
 import toast from 'react-hot-toast'
 import PageHeader from '../components/ui/PageHeader'
 import LoadingGrid from '../components/ui/LoadingGrid'
@@ -140,7 +140,12 @@ export default function Assignments() {
                   <div style={{ minWidth: 0 }}>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className={`font-bold text-sm ${isDone ? 'line-through text-muted' : ''}`}>{item.title}</span>
-                      {item.course_name && <span className="badge badge-accent text-xs">{item.course_name}</span>}
+                      {(item.subject || item.course_name) && <span className="badge badge-accent text-xs">{item.subject || item.course_name}</span>}
+                      {item.source === 'google_classroom' && (
+                        <span className="badge badge-success text-xs flex items-center gap-1">
+                          <BookOpen size={10} /> Google Classroom
+                        </span>
+                      )}
                       {item.priority === 'high' && <span className="badge badge-danger text-xs">High Priority</span>}
                     </div>
                     {item.due_date && (
@@ -150,6 +155,18 @@ export default function Assignments() {
                     )}
                   </div>
                 </div>
+
+                {item.alternate_link && (
+                  <a
+                    href={item.alternate_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-ghost btn-sm text-xs text-primary flex items-center gap-1"
+                    title="Open in Google Classroom"
+                  >
+                    Open GCR
+                  </a>
+                )}
 
                 <button className="btn btn-ghost btn-icon btn-sm text-danger" onClick={() => deleteAssignment(item.id)} title="Delete assignment">
                   <Trash2 size={14} />

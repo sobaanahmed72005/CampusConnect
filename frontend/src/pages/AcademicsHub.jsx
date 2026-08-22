@@ -6,6 +6,7 @@ import {
   Layers, CheckCircle2, Bookmark, Info, Flag
 } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
+import GoogleClassroomWidget from '../components/academics/GoogleClassroomWidget'
 import api from '../lib/api'
 
 export default function AcademicsHub() {
@@ -68,9 +69,14 @@ export default function AcademicsHub() {
       <PageHeader
         icon={GraduationCap}
         title="Student Academics Center 2.0"
-        subtitle="Comprehensive 9-in-1 portal for semester progress, course catalog, deadlines, attendance warnings, and academic calendar"
+        subtitle="Comprehensive 9-in-1 portal for semester progress, course catalog, deadlines, attendance warnings, and Google Classroom sync"
         iconColor="var(--primary)"
       />
+
+      {/* GOOGLE CLASSROOM REAL INTEGRATION WIDGET */}
+      <div className="mb-6">
+        <GoogleClassroomWidget onSyncSuccess={fetchAcademicData} />
+      </div>
 
       {/* 1. SEMESTER OVERVIEW BANNER */}
       <div className="card glass-card p-6 mb-8" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(16,185,129,0.08))', border: '1px solid var(--border-strong)' }}>
