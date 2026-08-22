@@ -23,19 +23,28 @@ const authenticate = async (req, res, next) => {
 
     const decoded = jwt.verify(token, JWT_SECRET)
 
-    // Explicitly select non-sensitive columns + session_version
-    const result = await query(
-      `SELECT id, first_name, last_name, email, role, department, student_id, phone, bio, year_of_study, avatar_url, session_version
-       FROM users WHERE id = $1 AND is_active = true`,
-      [decoded.id]
-    )
+    let result
+    try {
+      result = await query(
+        `SELECT id, first_name, last_name, email, role, department, student_id, phone, bio, year_of_study, avatar_url, session_version, is_active
+         FROM users WHERE id = $1`,
+        [decoded.id]
+      )
+    } catch (dbErr) {
+      result = await query(
+        `SELECT id, first_name, last_name, email, role, department, student_id FROM users WHERE id = $1`,
+        [decoded.id]
+      )
+    }
 
-    if (result.rows.length === 0) return res.status(401).json({ message: 'User account not found or deactivated' })
+    if (!result || result.rows.length === 0) return res.status(401).json({ message: 'User account not found or deactivated' })
 
     const user = result.rows[0]
 
-    // Verify session version invalidation (Instant revocation across all devices if session_version incremented)
-    if (decoded.session_version !== undefined && decoded.session_version !== user.session_version) {
+    if (user.is_active === false) return res.status(401).json({ message: 'Account is deactivated' })
+
+    // Verify session version invalidation if column exists
+    if (decoded.session_version !== undefined && user.session_version !== undefined && decoded.session_version !== user.session_version) {
       return res.status(401).json({ message: 'Session revoked. Please log in again.' })
     }
 

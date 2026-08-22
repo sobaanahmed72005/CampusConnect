@@ -16,6 +16,7 @@ const { applySecurityHeaders, sanitizeInputMiddleware } = require('./middleware/
 validateEnvironment()
 
 const app = express()
+app.set('trust proxy', 1)
 
 // Structured Request Logging & Request ID Tracing Middleware
 app.use(requestLogger)
@@ -119,7 +120,7 @@ const { query: dbQuery } = require('./config/database')
 app.get(['/api/health', '/api/health/live'], (req, res) => {
   res.json({
     status: 'ok',
-    version: '2.0.5-EXPLICIT-DB-MSG',
+    version: '2.0.6-SESSION-PERFORMANCE-FIX',
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   })
