@@ -191,7 +191,10 @@
   color: var(--danger) !important;
 }
 
+.header-mobile-search-btn { display: none; }
+
 @media (max-width: 768px) {
   .header-search { display: none; }
   .header-user-name { display: none; }
+  .header-mobile-search-btn { display: flex; }
 }

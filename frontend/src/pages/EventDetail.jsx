@@ -69,7 +69,7 @@ export default function EventDetail() {
             </div>
           </div>
 
-          <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'var(--space-4)',marginBottom:'var(--space-6)'}}>
+          <div className="event-specs-grid mb-6">
             {[
               { icon: Calendar, label: 'Date', value: new Date(event.date).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) },
               { icon: Clock, label: 'Time', value: event.time || '10:00 AM' },

@@ -151,7 +151,7 @@ export default function MarketplaceDetail() {
       </div>
 
       {/* Main Product Layout Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }} className="product-detail-grid">
+      <div className="product-detail-grid mb-6">
 
         {/* Left Column: Image Gallery */}
         <div>

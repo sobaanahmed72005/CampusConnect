@@ -148,7 +148,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Charts & System Health */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-5)', marginBottom: 'var(--space-5)' }}>
+      <div className="admin-chart-grid mb-5">
         {/* SVG Activity Trend Chart */}
         <SectionCard icon={Activity} title="Platform Growth & Usage Analytics" iconColor="var(--accent)" badgeText="2026" badgeClass="badge-muted">
           <div className="p-4 card" style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)' }}>

@@ -64,7 +64,7 @@ export default function AdminDataExports() {
           <FileText size={16} className="text-primary" /> Generate Module Dataset
         </h3>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 'var(--space-4)', alignItems: 'flex-end' }}>
+        <div className="export-form-grid">
           <div>
             <label className="form-label text-xs">Target Module</label>
             <select className="form-input text-xs" value={selectedModule} onChange={e => setSelectedModule(e.target.value)}>

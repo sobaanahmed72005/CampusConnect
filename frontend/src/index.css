@@ -808,9 +808,39 @@ a:hover { color: var(--primary-light); }
   min-width: 620px;
 }
 
+.admin-chart-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-5);
+}
+
+.export-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--space-4);
+  align-items: flex-end;
+}
+
+@media (max-width: 640px) {
+  .export-form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .product-modal-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+}
+
 @media (max-width: 1024px) {
-  .grid-4 { grid-template-columns: repeat(2, 1fr); }
-  .page-body { padding: var(--space-5) var(--space-5); }
+  .admin-chart-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
 }
 @media (max-width: 768px) {
   :root { --sidebar-width: 0px; }

@@ -99,7 +99,7 @@ export default function ProductModal({ product, onClose, onUpdate }) {
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-5)' }}>
+          <div className="product-modal-grid">
             {/* Image Gallery */}
             <div>
               <div style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', background: 'var(--bg-surface)', height: '240px', border: '1px solid var(--border)' }}>

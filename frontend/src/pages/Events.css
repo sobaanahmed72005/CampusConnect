@@ -25,3 +25,16 @@
 .event-card-actions .btn { flex: 1; justify-content: center; }
 
 @media (max-width: 768px) { .events-toolbar { flex-direction: column; align-items: stretch; } .tabs { overflow-x: auto; width: 100%; } }
+
+.event-specs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 540px) {
+  .event-specs-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+}

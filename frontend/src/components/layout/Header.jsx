@@ -286,6 +286,16 @@ export default function Header({ onMenuClick }) {
       </div>
 
       <div className="header-actions">
+        {/* Mobile Search Button */}
+        <button
+          className="btn btn-ghost btn-icon header-mobile-search-btn"
+          onClick={() => setCmdPaletteOpen(true)}
+          aria-label="Search"
+          title="Search"
+        >
+          <Search size={18} />
+        </button>
+
         {/* Real-Time Marketplace Messages Trigger */}
         <button
           className="btn btn-ghost btn-icon"

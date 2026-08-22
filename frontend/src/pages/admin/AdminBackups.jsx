@@ -121,7 +121,7 @@ export default function AdminBackups() {
             No database backups created yet. Click "Create Backup Now" above to generate a snapshot!
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-wrapper">
             <table className="table w-full text-xs">
               <thead>
                 <tr>

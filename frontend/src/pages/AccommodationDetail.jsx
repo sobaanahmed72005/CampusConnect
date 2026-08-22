@@ -121,7 +121,7 @@ export default function AccommodationDetail() {
       </div>
 
       {/* Main Grid: Gallery & Details */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }} className="accommodation-detail-grid">
+      <div className="accommodation-detail-grid mb-6">
 
         {/* Left Column: Image Gallery */}
         <div>
@@ -229,7 +229,7 @@ export default function AccommodationDetail() {
       </div>
 
       {/* Middle Row: Facilities & Description */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+      <div className="facilities-desc-grid mb-6">
         {/* Facilities */}
         <div className="card">
           <h3 style={{ fontSize: '1.1rem', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 8 }}>
