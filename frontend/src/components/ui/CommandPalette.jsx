@@ -34,15 +34,24 @@ export default function CommandPalette({ isOpen, onClose }) {
   const [results, setResults] = useState(null)
   const [searching, setSearching] = useState(false)
   const [recentSearches, setRecentSearches] = useState([])
+  const [popularQueries, setPopularQueries] = useState(SUGGESTIONS)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef(null)
 
-  // Load recent searches from localStorage
+  // Load recent searches & popular trends
   useEffect(() => {
     try {
       const saved = localStorage.getItem('cc_recent_searches')
       if (saved) setRecentSearches(JSON.parse(saved))
     } catch {}
+
+    api.get('/search/popular')
+      .then(res => {
+        if (Array.isArray(res.data?.queries) && res.data.queries.length > 0) {
+          setPopularQueries(res.data.queries)
+        }
+      })
+      .catch(() => {})
   }, [])
 
   // Listen for Ctrl+K or Cmd+K globally
@@ -274,7 +283,7 @@ export default function CommandPalette({ isOpen, onClose }) {
                   <Sparkles size={13} className="text-accent" /> POPULAR SUGGESTIONS
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {SUGGESTIONS.map(s => (
+                  {popularQueries.map(s => (
                     <button
                       key={s}
                       onClick={() => setQuery(s)}

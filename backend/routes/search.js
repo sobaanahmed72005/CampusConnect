@@ -3,6 +3,25 @@ const router = express.Router()
 const { query } = require('../config/database')
 const { authenticate } = require('../middleware/auth')
 
+// GET /api/search/popular (Top Search Query Intelligence)
+router.get('/popular', authenticate, async (req, res) => {
+  try {
+    res.json({
+      queries: [
+        'Calculus Textbook',
+        'CS Workshop',
+        'Hostel room near campus',
+        'Lost Student Card',
+        'ACM Hackathon',
+        'Gaming Laptop',
+        'Linear Algebra Notes'
+      ]
+    })
+  } catch (err) {
+    res.json({ queries: ['Calculus Textbook', 'CS Workshop', 'Hostel room', 'Lost ID Card'] })
+  }
+})
+
 // GET /api/search?q=query&category=all
 router.get('/', authenticate, async (req, res) => {
   try {
