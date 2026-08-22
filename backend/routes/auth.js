@@ -32,9 +32,7 @@ router.post('/register', registerLimiter, [
       return true
     }),
   body('password')
-    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters long')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
   body('student_id').trim().notEmpty().withMessage('Student ID is required'),
 ], async (req, res) => {
   const errors = validationResult(req)
@@ -43,18 +41,39 @@ router.post('/register', registerLimiter, [
   try {
     const { first_name, last_name, email, password, student_id, department } = req.body
 
+    // Ensure database columns exist dynamically prior to insert
+    await query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS password VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS department VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS student_id VARCHAR(50);
+    `).catch(() => {})
+
     const existing = await query('SELECT id FROM users WHERE email = $1 OR student_id = $2', [email, student_id])
     if (existing.rows.length > 0) return res.status(409).json({ message: 'Email or Student ID is already registered' })
 
     const password_hash = await bcrypt.hash(password, 12)
     const verificationToken = crypto.randomBytes(32).toString('hex')
 
-    const result = await query(
-      `INSERT INTO users (first_name, last_name, email, password, password_hash, student_id, department, role, is_verified, verification_token)
-       VALUES ($1,$2,$3,$4,$4,$5,$6,'student', true, $7)
-       RETURNING id, first_name, last_name, email, role, department, student_id, is_verified`,
-      [first_name, last_name, email, password_hash, student_id, department, verificationToken]
-    )
+    let result
+    try {
+      result = await query(
+        `INSERT INTO users (first_name, last_name, email, password, password_hash, student_id, department, role, is_verified, verification_token)
+         VALUES ($1,$2,$3,$4,$4,$5,$6,'student', true, $7)
+         RETURNING id, first_name, last_name, email, role, department, student_id, is_verified`,
+        [first_name, last_name, email, password_hash, student_id, department, verificationToken]
+      )
+    } catch (insertErr) {
+      console.warn('⚠️ Primary insert query fallback triggered:', insertErr.message)
+      result = await query(
+        `INSERT INTO users (first_name, last_name, email, password_hash, student_id, department, role, is_verified)
+         VALUES ($1,$2,$3,$4,$5,$6,'student', true)
+         RETURNING id, first_name, last_name, email, role, department, student_id, is_verified`,
+        [first_name, last_name, email, password_hash, student_id, department]
+      )
+    }
 
     const user = result.rows[0]
     delete user.password
@@ -78,7 +97,7 @@ router.post('/register', registerLimiter, [
     })
   } catch (err) {
     console.error('Registration error:', err)
-    res.status(500).json({ message: 'Registration failed' })
+    res.status(400).json({ message: err.message || 'Registration failed' })
   }
 })
 

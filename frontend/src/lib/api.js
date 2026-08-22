@@ -69,7 +69,8 @@ api.interceptors.response.use(
     if (err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED') {
       toast.error('Unable to connect to CampusConnect. Please check your network.')
     } else if (err.response?.status >= 500) {
-      toast.error('CampusConnect server error. Please try again in a moment.')
+      const serverMsg = err.response?.data?.message
+      toast.error(serverMsg || 'CampusConnect server error. Please try again in a moment.')
     }
 
     return Promise.reject(err)
