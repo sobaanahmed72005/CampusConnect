@@ -50,7 +50,7 @@ const query = async (text, params) => {
     try { recordDbQueryLatency(duration) } catch (e) {}
     return res;
   } catch (error) {
-    const msg = error?.message || (typeof error === 'string' ? error : '')
+    const msg = error?.message || error?.detail || error?.code || (typeof error === 'string' ? error : String(error));
     console.error('❌ Database query error:', msg);
 
     if (msg.includes('SSL') || msg.includes('pg_hba') || msg.includes('require') || msg.includes('does not support SSL')) {
@@ -62,11 +62,12 @@ const query = async (text, params) => {
         const res = await pool.query(text, params);
         return res;
       } catch (retryErr) {
-        console.error('❌ Retried database query error:', retryErr.message);
-        throw retryErr;
+        const retryMsg = retryErr?.message || retryErr?.detail || retryErr?.code || String(retryErr);
+        console.error('❌ Retried database query error:', retryMsg);
+        throw new Error(retryMsg);
       }
     }
-    throw error;
+    throw new Error(msg);
   }
 };
 
