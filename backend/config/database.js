@@ -2,10 +2,16 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 function createPool(useSsl) {
+  const isSslRequired = useSsl !== undefined ? useSsl : (
+    process.env.DB_SSL === 'true' || 
+    process.env.NODE_ENV === 'production' || 
+    (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost') && !process.env.DATABASE_URL.includes('127.0.0.1'))
+  );
+
   if (process.env.DATABASE_URL) {
     return new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: useSsl ? { rejectUnauthorized: false } : false,
+      ssl: isSslRequired ? { rejectUnauthorized: false } : false,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000
@@ -20,11 +26,11 @@ function createPool(useSsl) {
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
-    ssl: useSsl ? { rejectUnauthorized: false } : false
+    ssl: isSslRequired ? { rejectUnauthorized: false } : false
   });
 }
 
-let pool = createPool(process.env.DB_SSL === 'true');
+let pool = createPool();
 
 pool.on('connect', () => {
   console.log('✅ Connected to PostgreSQL database');
@@ -44,14 +50,22 @@ const query = async (text, params) => {
     try { recordDbQueryLatency(duration) } catch (e) {}
     return res;
   } catch (error) {
-    // If SSL connection fails on Railway internal network, automatically recreate pool without SSL and retry once
-    if (error.message && (error.message.includes('SSL') || error.message.includes('does not support SSL'))) {
-      console.warn('⚠️ Retrying query without SSL mode...');
-      pool = createPool(false);
-      const res = await pool.query(text, params);
-      return res;
+    const msg = error?.message || (typeof error === 'string' ? error : '')
+    console.error('❌ Database query error:', msg);
+
+    if (msg.includes('SSL') || msg.includes('pg_hba') || msg.includes('require') || msg.includes('does not support SSL')) {
+      const currentSsl = Boolean(pool.options && pool.options.ssl);
+      const nextSsl = !currentSsl;
+      console.warn(`⚠️ Retrying query with SSL mode toggled to ${nextSsl}...`);
+      try {
+        pool = createPool(nextSsl);
+        const res = await pool.query(text, params);
+        return res;
+      } catch (retryErr) {
+        console.error('❌ Retried database query error:', retryErr.message);
+        throw retryErr;
+      }
     }
-    console.error('❌ Database query error:', error.message);
     throw error;
   }
 };

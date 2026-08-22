@@ -119,7 +119,7 @@ const { query: dbQuery } = require('./config/database')
 app.get(['/api/health', '/api/health/live'], (req, res) => {
   res.json({
     status: 'ok',
-    version: '2.0.3-LIVE-AUTH-FIX',
+    version: '2.0.4-DB-RETRY-FIX',
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   })
@@ -140,11 +140,12 @@ app.get('/api/health/ready', async (req, res) => {
     }
     throw new Error('Database ping yielded zero rows')
   } catch (err) {
-    console.error('Readiness probe failed:', err.message)
+    const errMsg = err?.message || err?.detail || (typeof err === 'string' ? err : 'Database error')
+    console.error('Readiness probe failed:', errMsg)
     return res.status(503).json({
       status: 'unhealthy',
       database: 'disconnected',
-      error: err.message,
+      error: errMsg,
       timestamp: new Date().toISOString()
     })
   }
