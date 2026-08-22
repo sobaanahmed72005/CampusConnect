@@ -50,8 +50,8 @@ router.post('/register', registerLimiter, [
     const verificationToken = crypto.randomBytes(32).toString('hex')
 
     const result = await query(
-      `INSERT INTO users (first_name, last_name, email, password, student_id, department, role, is_verified, verification_token)
-       VALUES ($1,$2,$3,$4,$5,$6,'student', true, $7)
+      `INSERT INTO users (first_name, last_name, email, password, password_hash, student_id, department, role, is_verified, verification_token)
+       VALUES ($1,$2,$3,$4,$4,$5,$6,'student', true, $7)
        RETURNING id, first_name, last_name, email, role, department, student_id, is_verified`,
       [first_name, last_name, email, password_hash, student_id, department, verificationToken]
     )
@@ -96,7 +96,8 @@ router.post('/login', loginLimiter, [
     if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid email or password' })
 
     const user = result.rows[0]
-    const valid = user.password ? await bcrypt.compare(password, user.password) : false
+    const passHash = user.password || user.password_hash
+    const valid = passHash ? await bcrypt.compare(password, passHash) : false
     if (!valid) return res.status(401).json({ message: 'Invalid email or password' })
 
     const token = signToken(user.id)
@@ -166,6 +167,9 @@ async function ensureResetColumns() {
   try {
     await query(`
       ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS password VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255),
       ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255),
       ADD COLUMN IF NOT EXISTS reset_expires TIMESTAMP WITH TIME ZONE;
     `)
